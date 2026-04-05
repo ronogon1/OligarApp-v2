@@ -19,6 +19,26 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  
+  <div id="loginView" class="view active">
+    <div class="login-container">
+      <h2>Iniciar sesión</h2>
+
+      <input type="email" id="email" placeholder="Correo electrónico">
+      <input type="password" id="password" placeholder="Contraseña">
+
+      <button id="btnLogin">Ingresar</button>
+
+      <p id="loginError" class="error"></p>
+    </div>
+  </div>
+
+  <div id="appView" class="view">
+    <h2>Bienvenido</h2>
+    <p id="userEmail"></p>
+    <button id="btnLogout">Cerrar sesión</button>
+  </div>
+  
   <main class="app-shell">
     <section class="welcome-card">
       <img
