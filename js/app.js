@@ -1,9 +1,9 @@
-let supabase = null;
+let supabaseClient = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('OligarApp v2 iniciada');
 
-  supabase = window.supabase.createClient(
+  supabaseClient = window.supabase.createClient(
     CONFIG.supabaseUrl,
     CONFIG.supabaseKey
   );
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function probarConexion() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('estados_factura')
       .select('codigo, nombre')
       .limit(5);
