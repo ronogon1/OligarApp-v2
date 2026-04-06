@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnLogout').addEventListener('click', logout);
   document.getElementById('btnMenuToggle').addEventListener('click', toggleMobileMenu);
 
-  configurarNavegacion();
   configurarMenuMovil();
   configurarOrigenVenta();
+  actualizarSeccionActiva('Inicio');
 
   console.log('Cliente Supabase listo');
 
@@ -29,28 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-function configurarNavegacion() {
-  const navButtons = document.querySelectorAll('.nav-btn');
-
-  navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetView = btn.dataset.view;
-
-      document.querySelectorAll('.nav-btn').forEach(item => {
-        item.classList.remove('active');
-      });
-
-      document.querySelectorAll('.app-section').forEach(section => {
-        section.classList.remove('active-section');
-      });
-
-      btn.classList.add('active');
-      document.getElementById(targetView).classList.add('active-section');
-
-      cerrarMenuMovil();
-    });
-  });
-}
 
 function configurarMenuMovil() {
   const mobileButtons = document.querySelectorAll('.mobile-menu-btn[data-view]');
@@ -58,23 +36,24 @@ function configurarMenuMovil() {
   mobileButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetView = btn.dataset.view;
-
-      document.querySelectorAll('.nav-btn').forEach(item => {
-        item.classList.remove('active');
-
-        if (item.dataset.view === targetView) {
-          item.classList.add('active');
-        }
-      });
+      const sectionName = btn.textContent.trim();
 
       document.querySelectorAll('.app-section').forEach(section => {
         section.classList.remove('active-section');
       });
 
       document.getElementById(targetView).classList.add('active-section');
+      actualizarSeccionActiva(sectionName);
       cerrarMenuMovil();
     });
   });
+}
+
+function actualizarSeccionActiva(nombre) {
+  const label = document.getElementById('activeSectionLabel');
+  if (label) {
+    label.textContent = nombre;
+  }
 }
 
 function configurarOrigenVenta() {

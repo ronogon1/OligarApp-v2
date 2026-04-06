@@ -130,7 +130,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   padding: 0 20px;
   z-index: 1000;
   box-shadow: 0 8px 20px rgba(93, 64, 55, 0.06);
@@ -157,11 +157,12 @@ img {
   font-size: 1.1rem;
 }
 
-.app-nav {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
+.active-section-indicator {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--deep-lilac);
+  text-align: center;
+  flex: 1;
 }
 
 .nav-btn {
@@ -304,8 +305,8 @@ img {
 }
 
 .logo-secundario {
-  width: 160px;
-  max-height: 160px;
+  width: 250px;
+  max-height: 180px;
   object-fit: contain;
   background: var(--white);
   border: 1px solid var(--dust-grey);
@@ -480,6 +481,10 @@ img {
 /* RESPONSIVE */
 @media (max-width: 900px) {
   .desktop-nav {
+    display: none;
+  }
+
+  .active-section-indicator {
     display: none;
   }
 
