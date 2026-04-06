@@ -648,12 +648,23 @@ function agregarFilaPago() {
             <option value="">Selecciona</option>
             <option value="Efectivo">Efectivo</option>
             <option value="Transferencia">Transferencia</option>
-            <option value="Depósito">Depósito</option>
             <option value="Otro">Otro</option>
           </select>
         </div>
 
         <button type="button" class="btn-remove">×</button>
+      </div>
+
+      <div class="item-grid">
+        <div class="field-group-inline">
+          <label>Nota</label>
+          <input
+            type="text"
+            class="pago-nota"
+            placeholder="Referencia, banco, comprobante u observación"
+            maxlength="200"
+          >
+        </div>
       </div>
     </div>
   `;
@@ -801,7 +812,9 @@ async function cargarCatalogosVenta() {
     ventaCatalogos.estadoActivaId &&
     ventaCatalogos.origenes.CRE &&
     ventaCatalogos.origenes.CRO &&
-    ventaCatalogos.metodosPago.Efectivo
+    ventaCatalogos.metodosPago.Efectivo &&
+    ventaCatalogos.metodosPago.Transferencia &&
+    ventaCatalogos.metodosPago.Otro
   ) {
     return;
   }
@@ -823,7 +836,7 @@ async function cargarCatalogosVenta() {
     supabaseClient
       .from('metodos_pago')
       .select('id, codigo, nombre')
-      .in('codigo', ['EFE', 'TRA', 'DEP', 'OTR'])
+      .in('codigo', ['EFE', 'TRA', 'OTR'])
   ]);
 
   if (estadosResp.error) throw estadosResp.error;
@@ -874,12 +887,14 @@ function obtenerPagosFormulario() {
     const fecha = row.querySelector('.pago-fecha').value;
     const monto = redondear2(parseFloat(row.querySelector('.pago-monto').value || '0'));
     const metodo = row.querySelector('.pago-metodo').value;
+    const nota = normalizarTexto(row.querySelector('.pago-nota')?.value || '');
 
     return {
       index: index + 1,
       fecha,
       monto,
-      metodo
+      metodo,
+      nota
     };
   });
 }
@@ -1157,7 +1172,7 @@ async function insertarPagosFactura(facturaId, clienteId, pagos) {
         metodo_pago_id: metodoPagoId,
         fecha: item.fecha,
         monto: item.monto,
-        nota: null,
+        nota: item.nota || null,
         activo: true
       };
     });
@@ -1208,7 +1223,7 @@ async function guardarVentaDesdeFormulario() {
       data.productos,
       data.origenCodigo
     );
-    
+
     await insertarPagosFactura(factura.id, clienteId, data.pagos);
 
     alert(`Venta guardada correctamente.\nCódigo: ${factura.factura_codigo}`);
