@@ -302,6 +302,49 @@ function renderClienteSuggestions(clientes) {
   });
 }
 
+async function generarCodigoCliente() {
+  const prefijo = 'CLI-';
+  const regex = /^CLI-(\d{6})$/;
+
+  const siguiente = await obtenerSiguienteConsecutivo({
+    tabla: 'clientes',
+    columna: 'cliente_codigo',
+    prefijo,
+    regex
+  });
+
+  return formatearCodigo(prefijo, siguiente, 6);
+}
+
+async function crearClienteNuevo(clienteNombre) {
+  for (let intento = 0; intento < 8; intento += 1) {
+    const clienteCodigo = await generarCodigoCliente();
+
+    const { data, error } = await supabaseClient
+      .from('clientes')
+      .insert([
+        {
+          cliente_codigo: clienteCodigo,
+          nombre: clienteNombre,
+          activo: true
+        }
+      ])
+      .select('id, nombre, cliente_codigo')
+      .single();
+
+    if (!error) {
+      selectedCliente = data;
+      return data;
+    }
+
+    if (!esErrorDuplicado(error)) {
+      throw error;
+    }
+  }
+
+  throw new Error('No fue posible generar un código único para el cliente.');
+}
+
 /* =========================
    PRODUCTOS
 ========================= */
@@ -524,6 +567,56 @@ function recalcularFilaProducto(row) {
   recalcularResumen();
 }
 
+async function generarCodigoProducto(origenCodigo) {
+  if (!['CRE', 'CRO'].includes(origenCodigo)) {
+    throw new Error(`Origen de producto no válido: ${origenCodigo}`);
+  }
+
+  const prefijo = `${origenCodigo}-`;
+  const regex = new RegExp(`^${origenCodigo}-(\\d{6})$`);
+
+  const siguiente = await obtenerSiguienteConsecutivo({
+    tabla: 'productos',
+    columna: 'producto_codigo',
+    prefijo,
+    regex
+  });
+
+  return formatearCodigo(prefijo, siguiente, 6);
+}
+
+async function crearProductoNuevo(itemProducto, origenCodigo) {
+  for (let intento = 0; intento < 8; intento += 1) {
+    const productoCodigo = await generarCodigoProducto(origenCodigo);
+
+    const { data, error } = await supabaseClient
+      .from('productos')
+      .insert([
+        {
+          producto_codigo: productoCodigo,
+          nombre: itemProducto.nombre,
+          categoria_producto_id: null,
+          imagen_url: null,
+          activo: true
+        }
+      ])
+      .select('id, producto_codigo, imagen_url')
+      .single();
+
+    if (!error) {
+      itemProducto.row.dataset.productoId = data.id;
+      itemProducto.row.dataset.imagenUrl = data.imagen_url || '';
+      return data.id;
+    }
+
+    if (!esErrorDuplicado(error)) {
+      throw error;
+    }
+  }
+
+  throw new Error(`No fue posible generar un código único para el producto "${itemProducto.nombre}".`);
+}
+
 /* =========================
    PAGOS
 ========================= */
@@ -596,6 +689,22 @@ function renumerarPagos() {
   });
 }
 
+async function obtenerBaseSiguientePago() {
+  const prefijo = 'PAG-';
+  const regex = /^PAG-(\d{6})$/;
+
+  return await obtenerSiguienteConsecutivo({
+    tabla: 'pagos_factura',
+    columna: 'pago_codigo',
+    prefijo,
+    regex
+  });
+}
+
+function generarCodigoPagoDesdeBase(base, index) {
+  return formatearCodigo('PAG-', base + index, 6);
+}
+
 /* =========================
    RESUMEN
 ========================= */
@@ -656,31 +765,16 @@ function obtenerOrigenActivo() {
 async function generarCodigoFactura() {
   const year = new Date().getFullYear();
   const prefijo = `FAC-${year}`;
+  const regex = new RegExp(`^FAC-${year}(\\d{4})$`);
 
-  const { data, error } = await supabaseClient
-    .from('facturas')
-    .select('factura_codigo')
-    .ilike('factura_codigo', `${prefijo}%`)
-    .order('factura_codigo', { ascending: false })
-    .limit(1);
+  const siguiente = await obtenerSiguienteConsecutivo({
+    tabla: 'facturas',
+    columna: 'factura_codigo',
+    prefijo,
+    regex
+  });
 
-  if (error) {
-    throw error;
-  }
-
-  let siguiente = 1;
-
-  if (data && data.length && data[0].factura_codigo) {
-    const ultimoCodigo = data[0].factura_codigo;
-    const match = ultimoCodigo.match(/^FAC-(\d{4})(\d{4})$/);
-
-    if (match && Number(match[1]) === year) {
-      siguiente = Number(match[2]) + 1;
-    }
-  }
-
-  const consecutivo = String(siguiente).padStart(4, '0');
-  return `FAC-${year}${consecutivo}`;
+  return formatearCodigo(prefijo, siguiente, 4);
 }
 
 function generarCodigoPago(index) {
@@ -916,46 +1010,37 @@ async function obtenerClienteId(clienteNombre) {
 
   const { data, error } = await supabaseClient
     .from('clientes')
-    .select('id, nombre')
+    .select('id, nombre, cliente_codigo')
     .ilike('nombre', clienteNombre)
     .limit(1);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   if (data && data.length) {
     selectedCliente = data[0];
     return data[0].id;
   }
 
-  const { data: clienteNuevo, error: errorClienteNuevo } = await supabaseClient
-    .from('clientes')
-    .insert([
-      {
-        nombre: clienteNombre,
-        activo: true
-      }
-    ])
-    .select('id, nombre')
-    .single();
-
-  if (errorClienteNuevo) throw errorClienteNuevo;
-
-  selectedCliente = clienteNuevo;
+  const clienteNuevo = await crearClienteNuevo(clienteNombre);
   return clienteNuevo.id;
 }
 
-async function obtenerProductoId(itemProducto) {
+async function obtenerProductoId(itemProducto, origenCodigo) {
   if (itemProducto.productoId) {
     return itemProducto.productoId;
   }
 
   const { data, error } = await supabaseClient
     .from('productos')
-    .select('id, nombre, imagen_url')
+    .select('id, nombre, producto_codigo, imagen_url')
     .ilike('nombre', itemProducto.nombre)
     .limit(1);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   if (data && data.length) {
     itemProducto.row.dataset.productoId = data[0].id;
@@ -963,24 +1048,7 @@ async function obtenerProductoId(itemProducto) {
     return data[0].id;
   }
 
-  const { data: productoNuevo, error: errorProductoNuevo } = await supabaseClient
-    .from('productos')
-    .insert([
-      {
-        nombre: itemProducto.nombre,
-        categoria_producto_id: null,
-        imagen_url: null,
-        activo: true
-      }
-    ])
-    .select('id')
-    .single();
-
-  if (errorProductoNuevo) throw errorProductoNuevo;
-
-  itemProducto.row.dataset.productoId = productoNuevo.id;
-  itemProducto.row.dataset.imagenUrl = '';
-  return productoNuevo.id;
+  return await crearProductoNuevo(itemProducto, origenCodigo);
 }
 
 function obtenerMetodoPagoId(nombreMetodo) {
@@ -999,7 +1067,7 @@ async function insertarFactura(data, clienteId) {
     throw new Error('No se encontró el estado ACT de factura.');
   }
 
-  for (let intento = 0; intento < 5; intento += 1) {
+  for (let intento = 0; intento < 8; intento += 1) {
     const facturaCodigo = await generarCodigoFactura();
 
     const { data: factura, error } = await supabaseClient
@@ -1026,11 +1094,7 @@ async function insertarFactura(data, clienteId) {
       return factura;
     }
 
-    const esDuplicado = error.code === '23505'
-      || String(error.message || '').toLowerCase().includes('duplicate')
-      || String(error.details || '').toLowerCase().includes('already exists');
-
-    if (!esDuplicado) {
+    if (!esErrorDuplicado(error)) {
       throw error;
     }
   }
@@ -1038,13 +1102,13 @@ async function insertarFactura(data, clienteId) {
   throw new Error('No fue posible generar un código único para la factura.');
 }
 
-async function insertarDetalleFactura(facturaId, productos) {
+async function insertarDetalleFactura(facturaId, productos, origenCodigo) {
   const detalles = [];
 
   for (const item of productos) {
     if (!item.nombre) continue;
 
-    const productoId = await obtenerProductoId(item);
+    const productoId = await obtenerProductoId(item, origenCodigo);
 
     detalles.push({
       factura_id: facturaId,
@@ -1075,31 +1139,43 @@ async function insertarPagosFactura(facturaId, clienteId, pagos) {
     return;
   }
 
-  const payload = pagosValidos.map((item, index) => {
-    const metodoPagoId = obtenerMetodoPagoId(item.metodo);
+  for (let intento = 0; intento < 8; intento += 1) {
+    const basePago = await obtenerBaseSiguientePago();
 
-    if (!metodoPagoId) {
-      throw new Error(`No se encontró el método de pago "${item.metodo}".`);
+    const payload = pagosValidos.map((item, index) => {
+      const metodoPagoId = obtenerMetodoPagoId(item.metodo);
+
+      if (!metodoPagoId) {
+        throw new Error(`No se encontró el método de pago "${item.metodo}".`);
+      }
+
+      return {
+        pago_codigo: generarCodigoPagoDesdeBase(basePago, index),
+        factura_id: facturaId,
+        cliente_id: clienteId,
+        tipo_pago_id: null,
+        metodo_pago_id: metodoPagoId,
+        fecha: item.fecha,
+        monto: item.monto,
+        nota: null,
+        activo: true
+      };
+    });
+
+    const { error } = await supabaseClient
+      .from('pagos_factura')
+      .insert(payload);
+
+    if (!error) {
+      return;
     }
 
-    return {
-      pago_codigo: generarCodigoPago(index),
-      factura_id: facturaId,
-      cliente_id: clienteId,
-      tipo_pago_id: null,
-      metodo_pago_id: metodoPagoId,
-      fecha: item.fecha,
-      monto: item.monto,
-      nota: null,
-      activo: true
-    };
-  });
+    if (!esErrorDuplicado(error)) {
+      throw error;
+    }
+  }
 
-  const { error } = await supabaseClient
-    .from('pagos_factura')
-    .insert(payload);
-
-  if (error) throw error;
+  throw new Error('No fue posible generar códigos únicos para los pagos.');
 }
 
 function setEstadoBotonGuardar(guardando) {
@@ -1127,7 +1203,12 @@ async function guardarVentaDesdeFormulario() {
     const clienteId = await obtenerClienteId(data.clienteNombre);
     const factura = await insertarFactura(data, clienteId);
 
-    await insertarDetalleFactura(factura.id, data.productos);
+    await insertarDetalleFactura(
+      factura.id, 
+      data.productos,
+      data.origenCodigo
+    );
+    
     await insertarPagosFactura(factura.id, clienteId, data.pagos);
 
     alert(`Venta guardada correctamente.\nCódigo: ${factura.factura_codigo}`);
@@ -1155,4 +1236,75 @@ function escapeHtml(texto) {
   const div = document.createElement('div');
   div.textContent = texto ?? '';
   return div.innerHTML;
+}
+
+function esErrorDuplicado(error) {
+  if (!error) return false;
+
+  return error.code === '23505'
+    || String(error.message || '').toLowerCase().includes('duplicate')
+    || String(error.details || '').toLowerCase().includes('already exists');
+}
+
+async function listarCodigosPorPrefijo(tabla, columna, prefijo) {
+  const codigos = [];
+  let from = 0;
+  const chunkSize = 1000;
+
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from(tabla)
+      .select(columna)
+      .ilike(columna, `${prefijo}%`)
+      .range(from, from + chunkSize - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    const batch = (data || [])
+      .map(item => item[columna])
+      .filter(Boolean);
+
+    codigos.push(...batch);
+
+    if (!data || data.length < chunkSize) {
+      break;
+    }
+
+    from += chunkSize;
+  }
+
+  return codigos;
+}
+
+function obtenerMaximoConRegex(codigos, regex) {
+  let maximo = 0;
+
+  codigos.forEach(codigo => {
+    const match = String(codigo).match(regex);
+    if (!match) return;
+
+    const numero = Number(match[1]);
+    if (Number.isFinite(numero) && numero > maximo) {
+      maximo = numero;
+    }
+  });
+
+  return maximo;
+}
+
+function formatearCodigo(prefijo, numero, digitos) {
+  return `${prefijo}${String(numero).padStart(digitos, '0')}`;
+}
+
+async function obtenerSiguienteConsecutivo({
+  tabla,
+  columna,
+  prefijo,
+  regex
+}) {
+  const codigos = await listarCodigosPorPrefijo(tabla, columna, prefijo);
+  const maximo = obtenerMaximoConRegex(codigos, regex);
+  return maximo + 1;
 }
