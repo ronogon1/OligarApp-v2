@@ -228,5 +228,68 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- MODAL FACTURA -->
+  <div id="facturaModal" class="factura-modal hidden">
+    <div class="factura-content" id="facturaContent">
+
+      <!-- HEADER -->
+      <div class="factura-header">
+        <div class="factura-logo">
+          <img id="facturaLogo" src="" alt="Logo">
+        </div>
+
+        <div class="factura-membrete">
+          <h1 id="facturaTitulo">OLIGAR CROCHET</h1>
+          <p class="factura-slogan">“Creando con amor”</p>
+          <p class="factura-info">
+            Managua, Nicaragua | Celular: 7841 1119<br>
+            oligar.crochet@gmail.com
+          </p>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- DATOS -->
+      <div class="factura-top">
+        <div>
+          <strong class="factura-num" id="facturaCodigo"></strong>
+        </div>
+        <div>
+          <strong class="factura-fecha" id="facturaFecha"></strong>
+        </div>
+      </div>
+
+      <div class="factura-cliente" id="facturaCliente"></div>
+
+      <!-- PRODUCTOS -->
+      <div class="factura-productos">
+        <div class="factura-productos-header">
+          <span>Producto</span>
+          <span>Subtotal</span>
+        </div>
+
+        <div id="facturaProductosBody"></div>
+      </div>
+
+      <!-- TOTALES -->
+      <div class="factura-totales" id="facturaTotales"></div>
+
+      <!-- PAGOS -->
+      <div class="factura-pagos" id="facturaPagos"></div>
+
+      <!-- IMÁGENES -->
+      <div class="factura-imagenes" id="facturaImagenes"></div>
+
+      <!-- ACCIONES -->
+      <div class="factura-actions no-print">
+        <button onclick="window.print()">🖨 Imprimir</button>
+        <button onclick="cerrarFactura()">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+
 </body>
 </html>

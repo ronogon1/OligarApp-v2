@@ -785,3 +785,162 @@ img {
     width: 100%;
   }
 }
+
+/* 
+INICIO DEL MODAL FACTURA 
+*/
+
+.factura-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.factura-modal.hidden {
+  display: none;
+}
+
+.factura-content {
+  background: #fff;
+  width: 800px;
+  max-width: 95%;
+  padding: 30px;
+  border-radius: 12px;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* HEADER */
+.factura-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.factura-logo img {
+  width: 100px;
+}
+
+.factura-membrete h1 {
+  font-family: 'Great Vibes', cursive;
+  font-size: 36px;
+  margin: 0;
+}
+
+.factura-slogan {
+  font-style: italic;
+  margin: 0;
+}
+
+.factura-info {
+  font-size: 13px;
+}
+
+/* TOP */
+.factura-top {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.factura-num,
+.factura-fecha {
+  font-size: 16px;
+}
+
+/* CLIENTE */
+.factura-cliente {
+  margin: 10px 0;
+  padding-left: 10px;
+  border-left: 4px solid #8b5cf6;
+  font-size: 15px;
+}
+
+/* PRODUCTOS */
+.factura-productos-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  background: #eee;
+  padding: 6px;
+}
+
+.factura-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.factura-item-desc {
+  font-size: 13px;
+}
+
+.descuento {
+  color: red;
+}
+
+/* TOTALES */
+.factura-totales {
+  margin-top: 15px;
+  text-align: right;
+}
+
+/* PAGOS */
+.factura-pagos {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.cancelado {
+  color: green;
+  font-weight: bold;
+}
+
+/* IMÁGENES */
+.factura-imagenes {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.factura-img-card img {
+  width: 100%;
+  border-radius: 6px;
+}
+
+.factura-img-card span {
+  font-size: 11px;
+  display: block;
+  text-align: center;
+}
+
+/* PRINT */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .factura-content, .factura-content * {
+    visibility: visible;
+  }
+
+  .factura-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none;
+  }
+}
+
+/* 
+FIN DE MODAL FACTURA 
+*/

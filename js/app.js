@@ -1226,7 +1226,7 @@ async function guardarVentaDesdeFormulario() {
 
     await insertarPagosFactura(factura.id, clienteId, data.pagos);
 
-    alert(`Venta guardada correctamente.\nCódigo: ${factura.factura_codigo}`);
+    mostrarFactura(data, factura, data.clienteNombre);
     limpiarFormularioVenta();
   } catch (error) {
     console.error('Error guardando venta:', error);
@@ -1235,6 +1235,96 @@ async function guardarVentaDesdeFormulario() {
     setEstadoBotonGuardar(false);
   }
 }
+
+
+/* =========================
+   FACTURA
+========================= */
+
+function mostrarFactura(data, factura, clienteNombre) {
+  const modal = document.getElementById('facturaModal');
+
+  // Logo y título según origen
+  if (data.origenCodigo === 'CRO') {
+    document.getElementById('facturaLogo').src = 'assets/logos/logo_oligar_crochet.png';
+    document.getElementById('facturaTitulo').textContent = 'OLIGAR CROCHET';
+  } else {
+    document.getElementById('facturaLogo').src = 'assets/logos/logo_oligar_creaciones.png';
+    document.getElementById('facturaTitulo').textContent = 'OLIGAR CREACIONES';
+  }
+
+  document.getElementById('facturaCodigo').textContent = `Factura N°: ${factura.factura_codigo}`;
+  document.getElementById('facturaFecha').textContent = `Fecha: ${data.fechaVenta}`;
+  document.getElementById('facturaCliente').textContent = `Cliente: ${clienteNombre}`;
+
+  // PRODUCTOS
+  const body = document.getElementById('facturaProductosBody');
+  body.innerHTML = '';
+
+  data.productos.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'factura-item';
+
+    div.innerHTML = `
+      <div>
+        <div>${p.cantidad}x ${p.nombre}</div>
+        <div class="factura-item-desc">
+          Precio unitario: C$ ${p.precioUnit.toFixed(2)}
+          ${p.descuento > 0 ? ` | <span class="descuento">Desc: C$ ${p.descuento.toFixed(2)}</span>` : ''}
+        </div>
+      </div>
+      <div>C$ ${p.subtotal.toFixed(2)}</div>
+    `;
+
+    body.appendChild(div);
+  });
+
+  // TOTALES
+  const totales = document.getElementById('facturaTotales');
+  totales.innerHTML = `
+    Subtotal: C$ ${data.subtotalFactura.toFixed(2)}<br>
+    Envío: C$ ${data.envio.toFixed(2)}<br>
+    ${data.descGlobal > 0 ? `Descuento: C$ ${data.descGlobal.toFixed(2)}<br>` : ''}
+    <strong>Total: C$ ${data.totalFactura.toFixed(2)}</strong>
+  `;
+
+  // PAGOS
+  const pagos = document.getElementById('facturaPagos');
+  if (data.saldoPendiente === 0) {
+    pagos.innerHTML = `<div class="cancelado">CANCELADO</div>`;
+  } else {
+    pagos.innerHTML = `
+      Pagado: C$ ${data.pagado.toFixed(2)} |
+      Saldo pendiente: C$ ${data.saldoPendiente.toFixed(2)}
+    `;
+  }
+
+  // IMÁGENES
+  const imgContainer = document.getElementById('facturaImagenes');
+  imgContainer.innerHTML = '';
+
+  data.productos.forEach(p => {
+    if (!p.imagenUrl) return;
+
+    const div = document.createElement('div');
+    div.className = 'factura-img-card';
+
+    div.innerHTML = `
+      <img src="${p.imagenUrl}">
+      <span>${p.nombre}</span>
+    `;
+
+    imgContainer.appendChild(div);
+  });
+
+  modal.classList.remove('hidden');
+}
+
+function cerrarFactura() {
+  document.getElementById('facturaModal').classList.add('hidden');
+}
+
+
 
 /* =========================
    UTILIDADES
