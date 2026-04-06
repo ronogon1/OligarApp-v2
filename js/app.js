@@ -15,14 +15,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnLogin').addEventListener('click', login);
   document.getElementById('btnLogout').addEventListener('click', logout);
   document.getElementById('btnMenuToggle').addEventListener('click', toggleMobileMenu);
-
   document.getElementById('btnAddProducto').addEventListener('click', () => {
     agregarFilaProducto();
   });
-
   document.getElementById('btnAddPago').addEventListener('click', () => {
     agregarFilaPago();
   });
+  document.getElementById('btnLimpiarVenta').addEventListener('click', limpiarFormularioVenta);
 
   document.getElementById('envioVenta').addEventListener('input', recalcularResumen);
   document.getElementById('descVenta').addEventListener('input', recalcularResumen);
@@ -51,6 +50,41 @@ function inicializarFormularioVenta() {
   if (fechaVenta && !fechaVenta.value) {
     fechaVenta.value = obtenerFechaHoy();
   }
+
+  if (!document.querySelector('.producto-row')) {
+    agregarFilaProducto();
+  }
+
+  if (!document.querySelector('.pago-row')) {
+    agregarFilaPago();
+  }
+
+  recalcularResumen();
+}
+
+function limpiarFormularioVenta() {
+  selectedCliente = null;
+
+  document.getElementById('clienteVenta').value = '';
+  document.getElementById('clienteSuggestions').innerHTML = '';
+  document.getElementById('clienteSuggestions').classList.add('hidden');
+
+  document.getElementById('fechaVenta').value = obtenerFechaHoy();
+  document.getElementById('envioVenta').value = '0';
+  document.getElementById('descVenta').value = '0';
+
+  document.querySelectorAll('.origin-btn').forEach(btn => {
+    btn.classList.remove('active-origin');
+    if (btn.dataset.origin === 'CRE') {
+      btn.classList.add('active-origin');
+    }
+  });
+
+  document.getElementById('productosContainer').innerHTML = '';
+  document.getElementById('pagosContainer').innerHTML = '';
+
+  productoRowCounter = 0;
+  pagoRowCounter = 0;
 
   agregarFilaProducto();
   agregarFilaPago();
@@ -268,9 +302,11 @@ function agregarFilaProducto() {
 
   const html = `
     <div class="item-card producto-row" id="${rowId}" data-row-id="${productoRowCounter}">
+      <h4 class="item-card-title">Producto ${productoRowCounter}</h4>
+
       <div class="item-grid">
         <div class="field-group-inline autocomplete-wrapper">
-          <label>Producto</label>
+          <label>Nombre</label>
           <input
             type="text"
             class="producto-nombre"
@@ -321,6 +357,7 @@ function agregarFilaProducto() {
 
   const row = document.getElementById(rowId);
   configurarFilaProducto(row);
+  renumerarProductos();
   recalcularResumen();
 }
 
@@ -334,6 +371,7 @@ function configurarFilaProducto(row) {
 
   btnRemove.addEventListener('click', () => {
     row.remove();
+    renumerarProductos();
     recalcularResumen();
   });
 
@@ -344,6 +382,16 @@ function configurarFilaProducto(row) {
   fileInput.addEventListener('change', () => manejarPreviewImagen(row));
 
   recalcularFilaProducto(row);
+}
+
+function renumerarProductos() {
+  const rows = document.querySelectorAll('.producto-row');
+  rows.forEach((row, index) => {
+    const title = row.querySelector('.item-card-title');
+    if (title) {
+      title.textContent = `Producto ${index + 1}`;
+    }
+  });
 }
 
 async function manejarBusquedaProducto(row) {
@@ -460,6 +508,8 @@ function agregarFilaPago() {
 
   const html = `
     <div class="item-card pago-row" id="${rowId}">
+      <h4 class="item-card-title">Pago ${pagoRowCounter}</h4>
+
       <div class="item-grid-pagos">
         <div class="field-group-inline">
           <label>Fecha</label>
@@ -491,6 +541,7 @@ function agregarFilaPago() {
 
   const row = document.getElementById(rowId);
   configurarFilaPago(row);
+  renumerarPagos();
   recalcularResumen();
 }
 
@@ -500,10 +551,21 @@ function configurarFilaPago(row) {
 
   btnRemove.addEventListener('click', () => {
     row.remove();
+    renumerarPagos();
     recalcularResumen();
   });
 
   montoInput.addEventListener('input', recalcularResumen);
+}
+
+function renumerarPagos() {
+  const rows = document.querySelectorAll('.pago-row');
+  rows.forEach((row, index) => {
+    const title = row.querySelector('.item-card-title');
+    if (title) {
+      title.textContent = `Pago ${index + 1}`;
+    }
+  });
 }
 
 /* =========================
@@ -547,7 +609,10 @@ function calcularTotalPagos() {
 }
 
 function formatearMoneda(valor) {
-  return `C$ ${Number(valor || 0).toFixed(2)}`;
+  return `C$ ${Number(valor || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 }
 
 function escapeHtml(texto) {
