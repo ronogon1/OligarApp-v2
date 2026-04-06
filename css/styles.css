@@ -834,6 +834,10 @@ INICIO DEL MODAL FACTURA
   object-fit: contain;
 }
 
+.factura-membrete {
+  text-align: center;
+}
+
 .factura-membrete h1 {
   font-family: 'Great Vibes', cursive;
   font-size: 46px;
@@ -957,7 +961,7 @@ INICIO DEL MODAL FACTURA
   font-weight: 500;
 }
 
-.fatura-pagado {
+.factura-pagado {
   color: #1d4ed8;
 }
 
