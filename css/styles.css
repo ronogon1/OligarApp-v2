@@ -227,11 +227,10 @@ h1 {
   font: inherit;
   font-weight: 400;
   cursor: pointer;
-  white-space: normal;
 }
 
 .app-content {
-  padding: 140px 24px 32px;
+  padding: 240px 24px 32px;
 }
 
 .app-section {
