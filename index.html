@@ -21,6 +21,7 @@
 </head>
 <body>
   
+  <!-- LOGIN -->
   <div id="loginView" class="view active">
     <div class="login-container">
       <h2>Iniciar sesión</h2>
@@ -34,40 +35,48 @@
     </div>
   </div>
 
+  <!-- APP -->
   <div id="appView" class="view">
-    <h2>Bienvenido</h2>
-    <p id="userEmail"></p>
-    <button id="btnLogout">Cerrar sesión</button>
-  </div>
-  
-  <main class="app-shell">
-    <section class="welcome-card">
-      <img
-        src="assets/logos/logo_oligar.jpg"
-        alt="Logo principal de Oligar"
-        class="logo-principal"
-      >
 
-      <h1>OligarApp v2</h1>
-      <p class="subtitle">Base inicial del nuevo sistema</p>
-
-      <div class="brand-logos">
-        <img
-          src="assets/logos/logo_oligar_crochet.png"
-          alt="Logo Oligar Crochet"
-          class="logo-secundario"
-        >
-        <img
-          src="assets/logos/logo_oligar_creaciones.png"
-          alt="Logo Oligar Creaciones"
-          class="logo-secundario"
-        >
+    <header class="app-header">
+      <h1>OligarApp</h1>
+      <div class="user-info">
+        <span id="userEmail"></span>
+        <button id="btnLogout">Cerrar sesión</button>
       </div>
-    </section>
-  </main>
+    </header>
+
+    <main class="app-content">
+      
+      <section class="welcome-card">
+        <img
+          src="assets/logos/logo_oligar.jpg"
+          alt="Logo principal de Oligar"
+          class="logo-principal"
+        >
+
+        <h1>OligarApp v2</h1>
+        <p class="subtitle">Base inicial del nuevo sistema</p>
+
+        <div class="brand-logos">
+          <img
+            src="assets/logos/logo_oligar_crochet.png"
+            alt="Logo Oligar Crochet"
+            class="logo-secundario"
+          >
+          <img
+            src="assets/logos/logo_oligar_creaciones.png"
+            alt="Logo Oligar Creaciones"
+            class="logo-secundario"
+          >
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
+
 </body>
 </html>
