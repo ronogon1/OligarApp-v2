@@ -653,22 +653,34 @@ function obtenerOrigenActivo() {
   return btn ? btn.dataset.origin : '';
 }
 
-function generarCodigoFactura() {
-  const ahora = new Date();
-  const fecha = [
-    ahora.getFullYear(),
-    String(ahora.getMonth() + 1).padStart(2, '0'),
-    String(ahora.getDate()).padStart(2, '0')
-  ].join('');
+async function generarCodigoFactura() {
+  const year = new Date().getFullYear();
+  const prefijo = `FAC-${year}`;
 
-  const hora = [
-    String(ahora.getHours()).padStart(2, '0'),
-    String(ahora.getMinutes()).padStart(2, '0'),
-    String(ahora.getSeconds()).padStart(2, '0')
-  ].join('');
+  const { data, error } = await supabaseClient
+    .from('facturas')
+    .select('factura_codigo')
+    .ilike('factura_codigo', `${prefijo}%`)
+    .order('factura_codigo', { ascending: false })
+    .limit(1);
 
-  const random = Math.random().toString(36).slice(2, 7).toUpperCase();
-  return `FAC-${fecha}-${hora}-${random}`;
+  if (error) {
+    throw error;
+  }
+
+  let siguiente = 1;
+
+  if (data && data.length && data[0].factura_codigo) {
+    const ultimoCodigo = data[0].factura_codigo;
+    const match = ultimoCodigo.match(/^FAC-(\d{4})(\d{4})$/);
+
+    if (match && Number(match[1]) === year) {
+      siguiente = Number(match[2]) + 1;
+    }
+  }
+
+  const consecutivo = String(siguiente).padStart(4, '0');
+  return `FAC-${year}${consecutivo}`;
 }
 
 function generarCodigoPago(index) {
@@ -987,9 +999,9 @@ async function insertarFactura(data, clienteId) {
     throw new Error('No se encontró el estado ACT de factura.');
   }
 
-  let facturaCodigo = generarCodigoFactura();
+  for (let intento = 0; intento < 5; intento += 1) {
+    const facturaCodigo = await generarCodigoFactura();
 
-  for (let intento = 0; intento < 3; intento += 1) {
     const { data: factura, error } = await supabaseClient
       .from('facturas')
       .insert([
@@ -1014,15 +1026,13 @@ async function insertarFactura(data, clienteId) {
       return factura;
     }
 
-    const esDuplicado = String(error.message || '').toLowerCase().includes('duplicate')
-      || String(error.details || '').toLowerCase().includes('already exists')
-      || error.code === '23505';
+    const esDuplicado = error.code === '23505'
+      || String(error.message || '').toLowerCase().includes('duplicate')
+      || String(error.details || '').toLowerCase().includes('already exists');
 
     if (!esDuplicado) {
       throw error;
     }
-
-    facturaCodigo = generarCodigoFactura();
   }
 
   throw new Error('No fue posible generar un código único para la factura.');
