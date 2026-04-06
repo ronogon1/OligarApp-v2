@@ -113,7 +113,8 @@ function mostrarApp(user) {
   document.getElementById('appView').classList.remove('hidden');
   document.getElementById('appView').classList.add('active');
 
-  document.getElementById('userEmail').textContent = user.email;
+  const nombreUsuario = user.email ? user.email.split('@')[0] : 'Usuario';
+  document.getElementById('userEmail').textContent = nombreUsuario;
 }
 
 function mostrarLogin() {
