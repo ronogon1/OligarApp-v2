@@ -1258,10 +1258,10 @@ function mostrarFactura(data, factura, clienteNombre) {
 
   if (data.origenCodigo === 'CRO') {
     document.getElementById('facturaLogo').src = 'assets/logos/logo_oligar_crochet.png';
-    document.getElementById('facturaTitulo').textContent = 'OLIGAR CROCHET';
+    document.getElementById('facturaTitulo').textContent = 'Oligar Crochet';
   } else {
     document.getElementById('facturaLogo').src = 'assets/logos/logo_oligar_creaciones.png';
-    document.getElementById('facturaTitulo').textContent = 'OLIGAR CREACIONES';
+    document.getElementById('facturaTitulo').textContent = 'Oligar Creaciones';
   }
 
   document.getElementById('facturaCodigo').textContent = `Factura N°: ${factura.factura_codigo}`;
@@ -1298,21 +1298,39 @@ function mostrarFactura(data, factura, clienteNombre) {
 
   const totales = document.getElementById('facturaTotales');
   totales.innerHTML = `
-    <div>Subtotal: C$ ${subtotalFactura.toFixed(2)}</div>
-    <div>Envío: C$ ${envio.toFixed(2)}</div>
-    ${descGlobal > 0 ? `<div>Descuento global: C$ ${descGlobal.toFixed(2)}</div>` : ''}
-    <div><strong>Total: C$ ${totalFactura.toFixed(2)}</strong></div>
+    <div class="factura-total-row">
+      <span>Subtotal:</span>
+      <span>C$ ${subtotalFactura.toFixed(2)}</span>
+    </div>
+    <div class="factura-total-row">
+      <span>Envío:</span>
+      <span>C$ ${envio.toFixed(2)}</span>
+    </div>
+    ${descGlobal > 0 ? `
+      <div class="factura-total-row">
+        <span>Descuento global:</span>
+        <span>C$ ${descGlobal.toFixed(2)}</span>
+      </div>
+    ` : ''}
+    <div class="factura-total-row total-general">
+      <span>Total:</span>
+      <span>C$ ${totalFactura.toFixed(2)}</span>
+    </div>
   `;
 
   const pagos = document.getElementById('facturaPagos');
   if (saldoPendiente <= 0) {
     pagos.innerHTML = `
-      <div>Pagado: C$ ${pagado.toFixed(2)}</div>
+      <div class="factura-pagado">Pagado: C$ ${pagado.toFixed(2)}</div>
       <div class="cancelado">CANCELADO</div>
     `;
   } else {
     pagos.innerHTML = `
-      <div>Pagado: C$ ${pagado.toFixed(2)} &nbsp; | &nbsp; Saldo pendiente: C$ ${saldoPendiente.toFixed(2)}</div>
+      <div>
+        <span class="factura-pagado">Pagado: C$ ${pagado.toFixed(2)}</span>
+        &nbsp; | &nbsp;
+        <span class="factura-saldo">Saldo pendiente: C$ ${saldoPendiente.toFixed(2)}</span>
+      </div>
     `;
   }
 

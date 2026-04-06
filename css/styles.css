@@ -815,89 +815,160 @@ INICIO DEL MODAL FACTURA
 
 /* HEADER */
 .factura-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 140px ifr;
   align-items: center;
-  gap: 20px;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+
+.factura-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .factura-logo img {
-  width: 100px;
+  width: 250px;
+  max-height: 160px;
+  object-fit: contain;
 }
 
 .factura-membrete h1 {
   font-family: 'Great Vibes', cursive;
-  font-size: 36px;
-  margin: 0;
+  font-size: 46px;
+  line-height: 1;
+  margin: 0 0 6px;
+  font-weight: 400;
 }
 
 .factura-slogan {
+  font-family: 'Poppins', sans-serif;
   font-style: italic;
-  margin: 0;
+  font-size: 15px;
+  margin: 0 0 8px;
 }
 
 .factura-info {
   font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
 }
 
 /* TOP */
 .factura-top {
   display: flex;
   justify-content: space-between;
-  margin-top: 10px;
+  margin-top: 12px;
+  margin-bottom: 12px;
 }
 
 .factura-num,
 .factura-fecha {
-  font-size: 16px;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 /* CLIENTE */
 .factura-cliente {
-  margin: 10px 0;
+  margin: 12px 0 18px;
   padding-left: 10px;
   border-left: 4px solid #8b5cf6;
-  font-size: 15px;
+  font-size: 18px;
+  line-height: 1.4;
 }
 
 /* PRODUCTOS */
 .factura-productos-header {
   display: flex;
   justify-content: space-between;
-  font-weight: bold;
+  font-weight: 700;
   background: #eee;
-  padding: 6px;
+  padding: 8px 10px;
+  font-size: 15px;
 }
 
 .factura-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 2px;
   border-bottom: 1px solid #ddd;
+}
+
+.factura-item > div:first-child {
+  flex: 1;
+}
+
+.factura-item > div:last-child {
+  min-width: 120px;
+  text-align: right;
+  font-weight: 500;
 }
 
 .factura-item-desc {
   font-size: 13px;
+  margin-top: 3px;
 }
 
 .descuento {
-  color: red;
+  color: #d62828;
+  font-weight: 500;
 }
 
 /* TOTALES */
 .factura-totales {
-  margin-top: 15px;
+  margin-top: 18px;
+  margin-left: auto;
+  width: 320px;
+  max-width: 100%;
+}
+
+.factura-total-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 14px;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.factura-total-row span.first-child {
   text-align: right;
+}
+
+.factura-total-row span.last-child {
+  min-width: 110px;
+  text-align: right;
+}
+
+.factura-total-row.total-general {
+  font-size: 17px;
+  font-weight: 700;
+  margin-top: 4px;
 }
 
 /* PAGOS */
 .factura-pagos {
-  margin-top: 10px;
+  margin-top: 18px;
   text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.fatura-pagado {
+  color: #1d4ed8;
+}
+
+.factura-saldo {
+  color: #d62828;
 }
 
 .cancelado {
-  color: green;
-  font-weight: bold;
+  color: #15803d;
+  font-weight: 700;
+  font-size: 17px;
 }
 
 /* IMÁGENES */
