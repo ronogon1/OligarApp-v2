@@ -37,39 +37,143 @@
 
   <!-- APP -->
   <div id="appView" class="view">
-
     <header class="app-header">
-      <h1>OligarApp</h1>
+      <div class="app-brand">
+        <img
+          src="assets/logos/logo_oligar.jpg"
+          alt="Logo principal de Oligar"
+          class="app-header-logo"
+        >
+        <span class="app-title">OligarApp</span>
+      </div>
+
+      <nav class="app-nav">
+        <button class="nav-btn active" data-view="homeView">Inicio</button>
+        <button class="nav-btn" data-view="ventaView">Nueva venta</button>
+      </nav>
+
       <div class="user-info">
         <span id="userEmail"></span>
-        <button id="btnLogout">Cerrar sesión</button>
+        <button id="btnLogout" class="btn-logout">Cerrar sesión</button>
       </div>
     </header>
 
     <main class="app-content">
-      
-      <section class="welcome-card">
-        <img
-          src="assets/logos/logo_oligar.jpg"
-          alt="Logo principal de Oligar"
-          class="logo-principal"
-        >
-
-        <h1>OligarApp v2</h1>
-        <p class="subtitle">Base inicial del nuevo sistema</p>
-
-        <div class="brand-logos">
+      <!-- INICIO -->
+      <section id="homeView" class="app-section active-section">
+        <section class="welcome-card">
           <img
-            src="assets/logos/logo_oligar_crochet.png"
-            alt="Logo Oligar Crochet"
-            class="logo-secundario"
+            src="assets/logos/logo_oligar.jpg"
+            alt="Logo principal de Oligar"
+            class="logo-principal"
           >
-          <img
-            src="assets/logos/logo_oligar_creaciones.png"
-            alt="Logo Oligar Creaciones"
-            class="logo-secundario"
-          >
-        </div>
+
+          <h1>OligarApp v2</h1>
+          <p class="subtitle">Base inicial del nuevo sistema</p>
+
+          <div class="brand-logos">
+            <img
+              src="assets/logos/logo_oligar_crochet.png"
+              alt="Logo Oligar Crochet"
+              class="logo-secundario"
+            >
+            <img
+              src="assets/logos/logo_oligar_creaciones.png"
+              alt="Logo Oligar Creaciones"
+              class="logo-secundario"
+            >
+          </div>
+        </section>
+      </section>
+
+      <!-- NUEVA VENTA -->
+      <section id="ventaView" class="app-section">
+        <section class="module-card">
+          <div class="module-header">
+            <h2>Registro de venta</h2>
+            <p>Base inicial del módulo de ventas</p>
+          </div>
+
+          <div class="venta-grid">
+            <div class="field-group">
+              <label for="clienteVenta">Nombre del cliente</label>
+              <input type="text" id="clienteVenta" placeholder="Escribe el nombre del cliente">
+            </div>
+
+            <div class="field-group">
+              <label for="fechaVenta">Fecha</label>
+              <input type="date" id="fechaVenta">
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Origen</h3>
+            <div class="origen-buttons">
+              <button type="button" class="origin-btn active-origin" data-origin="CRE">
+                Creaciones
+              </button>
+              <button type="button" class="origin-btn" data-origin="CRO">
+                Crochet
+              </button>
+            </div>
+            <p class="helper-text">
+              El origen definirá la línea de negocio de la factura.
+            </p>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Productos</h3>
+            <p class="helper-text">
+              Aquí luego agregaremos la tabla dinámica de productos, descuentos e imágenes.
+            </p>
+            <button type="button" class="btn-secondary-soft">+ Añadir producto</button>
+          </div>
+
+          <div class="venta-grid">
+            <div class="field-group">
+              <label for="envioVenta">Envío (C$)</label>
+              <input type="number" id="envioVenta" value="0" min="0" step="0.01">
+            </div>
+
+            <div class="field-group">
+              <label for="descVenta">Desc. global (C$)</label>
+              <input type="number" id="descVenta" value="0" min="0" step="0.01">
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Pagos</h3>
+            <p class="helper-text">
+              Aquí luego agregaremos pagos múltiples, método de pago y validación de saldo.
+            </p>
+            <button type="button" class="btn-secondary-soft">+ Agregar pago</button>
+          </div>
+
+          <div class="summary-card">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <strong>C$ 0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Total</span>
+              <strong>C$ 0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Pagado</span>
+              <strong>C$ 0.00</strong>
+            </div>
+            <div class="summary-row total-row">
+              <span>Saldo pendiente</span>
+              <strong>C$ 0.00</strong>
+            </div>
+          </div>
+
+          <div class="module-actions">
+            <button type="button" class="btn-primary-wide">
+              Guardar venta e imprimir factura
+            </button>
+          </div>
+        </section>
       </section>
     </main>
   </div>

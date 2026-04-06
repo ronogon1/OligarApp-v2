@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnLogin').addEventListener('click', login);
   document.getElementById('btnLogout').addEventListener('click', logout);
 
+  configurarNavegacion();
+  configurarOrigenVenta();
+
   console.log('Cliente Supabase listo');
 
   await verificarSesionActual();
@@ -23,6 +26,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 });
+
+function configurarNavegacion() {
+  const navButtons = document.querySelectorAll('.nav-btn');
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetView = btn.dataset.view;
+
+      document.querySelectorAll('.nav-btn').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      document.querySelectorAll('.app-section').forEach(section => {
+        section.classList.remove('active-section');
+      });
+
+      btn.classList.add('active');
+      document.getElementById(targetView).classList.add('active-section');
+    });
+  });
+}
+
+function configurarOrigenVenta() {
+  const originButtons = document.querySelectorAll('.origin-btn');
+
+  originButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      originButtons.forEach(item => item.classList.remove('active-origin'));
+      btn.classList.add('active-origin');
+    });
+  });
+}
 
 async function verificarSesionActual() {
   const { data, error } = await supabaseClient.auth.getSession();
