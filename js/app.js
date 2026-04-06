@@ -4,6 +4,12 @@ let selectedCliente = null;
 let productoRowCounter = 0;
 let pagoRowCounter = 0;
 
+const ventaCatalogos = {
+  estadoActivaId: null,
+  origenes: {},
+  metodosPago: {}
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('OligarApp v2 iniciada');
 
@@ -22,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     agregarFilaPago();
   });
   document.getElementById('btnLimpiarVenta').addEventListener('click', limpiarFormularioVenta);
+  document.getElementById('btnGuardarVenta').addEventListener('click', guardarVentaDesdeFormulario);
 
   document.getElementById('envioVenta').addEventListener('input', recalcularResumen);
   document.getElementById('descVenta').addEventListener('input', recalcularResumen);
@@ -114,7 +121,6 @@ function configurarMenuMovil() {
       actualizarSeccionActiva(sectionName);
       cerrarMenuMovil();
 
-      // 👇 SOLO cuando entras a ventas
       if (targetView === 'ventaView') {
         if (!document.querySelector('.producto-row')) {
           inicializarFormularioVenta();
@@ -307,7 +313,14 @@ function agregarFilaProducto() {
   const rowId = `productoRow-${productoRowCounter}`;
 
   const html = `
-    <div class="item-card producto-row" id="${rowId}" data-row-id="${productoRowCounter}">
+    <div
+      class="item-card producto-row"
+      id="${rowId}"
+      data-row-id="${productoRowCounter}"
+      data-producto-id=""
+      data-imagen-url=""
+      data-subtotal="0"
+    >
       <h4 class="item-card-title">Producto ${productoRowCounter}</h4>
 
       <div class="item-grid">
@@ -381,7 +394,12 @@ function configurarFilaProducto(row) {
     recalcularResumen();
   });
 
-  nombreInput.addEventListener('input', () => manejarBusquedaProducto(row));
+  nombreInput.addEventListener('input', () => {
+    row.dataset.productoId = '';
+    row.dataset.imagenUrl = '';
+    manejarBusquedaProducto(row);
+  });
+
   cantidadInput.addEventListener('input', () => recalcularFilaProducto(row));
   precioInput.addEventListener('input', () => recalcularFilaProducto(row));
   descuentoInput.addEventListener('input', () => recalcularFilaProducto(row));
@@ -406,6 +424,7 @@ async function manejarBusquedaProducto(row) {
   const term = input.value.trim();
 
   row.dataset.productoId = '';
+  row.dataset.imagenUrl = '';
 
   if (term.length < 2) {
     box.innerHTML = '';
@@ -457,6 +476,7 @@ function renderProductoSuggestions(row, productos) {
       if (!producto) return;
 
       row.dataset.productoId = producto.id;
+      row.dataset.imagenUrl = producto.imagen_url || '';
       row.querySelector('.producto-nombre').value = producto.nombre;
       box.innerHTML = '';
       box.classList.add('hidden');
@@ -464,6 +484,8 @@ function renderProductoSuggestions(row, productos) {
       if (producto.imagen_url) {
         mostrarPreviewExistente(row, producto.imagen_url);
       }
+
+      recalcularFilaProducto(row);
     });
   });
 }
@@ -600,7 +622,7 @@ function calcularSubtotalProductos() {
     total += parseFloat(row.dataset.subtotal || '0');
   });
 
-  return total;
+  return redondear2(total);
 }
 
 function calcularTotalPagos() {
@@ -611,8 +633,506 @@ function calcularTotalPagos() {
     total += parseFloat(input.value || '0');
   });
 
-  return total;
+  return redondear2(total);
 }
+
+/* =========================
+   GUARDAR VENTA
+========================= */
+
+function redondear2(valor) {
+  return Math.round((Number(valor) + Number.EPSILON) * 100) / 100;
+}
+
+function normalizarTexto(valor) {
+  return (valor || '').trim().replace(/\s+/g, ' ');
+}
+
+function obtenerOrigenActivo() {
+  const btn = document.querySelector('.origin-btn.active-origin');
+  return btn ? btn.dataset.origin : '';
+}
+
+function generarCodigoFactura() {
+  const ahora = new Date();
+  const fecha = [
+    ahora.getFullYear(),
+    String(ahora.getMonth() + 1).padStart(2, '0'),
+    String(ahora.getDate()).padStart(2, '0')
+  ].join('');
+
+  const hora = [
+    String(ahora.getHours()).padStart(2, '0'),
+    String(ahora.getMinutes()).padStart(2, '0'),
+    String(ahora.getSeconds()).padStart(2, '0')
+  ].join('');
+
+  const random = Math.random().toString(36).slice(2, 7).toUpperCase();
+  return `FAC-${fecha}-${hora}-${random}`;
+}
+
+function generarCodigoPago(index) {
+  const ahora = new Date();
+  const fecha = [
+    ahora.getFullYear(),
+    String(ahora.getMonth() + 1).padStart(2, '0'),
+    String(ahora.getDate()).padStart(2, '0')
+  ].join('');
+
+  const hora = [
+    String(ahora.getHours()).padStart(2, '0'),
+    String(ahora.getMinutes()).padStart(2, '0'),
+    String(ahora.getSeconds()).padStart(2, '0')
+  ].join('');
+
+  const sufijo = String(index + 1).padStart(2, '0');
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `PAG-${fecha}-${hora}-${sufijo}-${random}`;
+}
+
+async function cargarCatalogosVenta() {
+  if (
+    ventaCatalogos.estadoActivaId &&
+    ventaCatalogos.origenes.CRE &&
+    ventaCatalogos.origenes.CRO &&
+    ventaCatalogos.metodosPago.Efectivo
+  ) {
+    return;
+  }
+
+  const [
+    estadosResp,
+    origenesResp,
+    metodosResp
+  ] = await Promise.all([
+    supabaseClient
+      .from('estados_factura')
+      .select('id, codigo')
+      .eq('codigo', 'ACT')
+      .single(),
+    supabaseClient
+      .from('origenes_factura')
+      .select('id, codigo')
+      .in('codigo', ['CRE', 'CRO']),
+    supabaseClient
+      .from('metodos_pago')
+      .select('id, codigo, nombre')
+      .in('codigo', ['EFE', 'TRA', 'DEP', 'OTR'])
+  ]);
+
+  if (estadosResp.error) throw estadosResp.error;
+  if (origenesResp.error) throw origenesResp.error;
+  if (metodosResp.error) throw metodosResp.error;
+
+  ventaCatalogos.estadoActivaId = estadosResp.data.id;
+
+  ventaCatalogos.origenes = {};
+  (origenesResp.data || []).forEach(item => {
+    ventaCatalogos.origenes[item.codigo] = item.id;
+  });
+
+  ventaCatalogos.metodosPago = {};
+  (metodosResp.data || []).forEach(item => {
+    ventaCatalogos.metodosPago[item.nombre] = item.id;
+  });
+}
+
+function obtenerProductosFormulario() {
+  const rows = [...document.querySelectorAll('.producto-row')];
+
+  return rows.map((row, index) => {
+    const nombre = normalizarTexto(row.querySelector('.producto-nombre').value);
+    const cantidad = redondear2(parseFloat(row.querySelector('.producto-cantidad').value || '0'));
+    const precioUnit = redondear2(parseFloat(row.querySelector('.producto-precio').value || '0'));
+    const descuento = redondear2(parseFloat(row.querySelector('.producto-descuento').value || '0'));
+    const subtotal = redondear2(parseFloat(row.dataset.subtotal || '0'));
+
+    return {
+      index: index + 1,
+      row,
+      productoId: row.dataset.productoId || '',
+      imagenUrl: row.dataset.imagenUrl || '',
+      nombre,
+      cantidad,
+      precioUnit,
+      descuento,
+      subtotal
+    };
+  });
+}
+
+function obtenerPagosFormulario() {
+  const rows = [...document.querySelectorAll('.pago-row')];
+
+  return rows.map((row, index) => {
+    const fecha = row.querySelector('.pago-fecha').value;
+    const monto = redondear2(parseFloat(row.querySelector('.pago-monto').value || '0'));
+    const metodo = row.querySelector('.pago-metodo').value;
+
+    return {
+      index: index + 1,
+      fecha,
+      monto,
+      metodo
+    };
+  });
+}
+
+function obtenerDatosVentaFormulario() {
+  const clienteNombre = normalizarTexto(
+    document.getElementById('clienteVenta').value
+  );
+  const fechaVenta = document.getElementById('fechaVenta').value;
+  const origenCodigo = obtenerOrigenActivo();
+  const envio = redondear2(parseFloat(document.getElementById('envioVenta').value || '0'));
+  const descGlobal = redondear2(parseFloat(document.getElementById('descVenta').value || '0'));
+
+  const productos = obtenerProductosFormulario();
+  const pagos = obtenerPagosFormulario();
+
+  const subtotalFactura = redondear2(
+    productos.reduce((acc, item) => acc + item.subtotal, 0)
+  );
+
+  const totalFactura = redondear2(
+    Math.max(subtotalFactura + envio - descGlobal, 0)
+  );
+
+  const pagado = redondear2(
+    pagos.reduce((acc, item) => acc + item.monto, 0)
+  );
+
+  return {
+    clienteNombre,
+    fechaVenta,
+    origenCodigo,
+    envio,
+    descGlobal,
+    subtotalFactura,
+    totalFactura,
+    pagado,
+    productos,
+    pagos
+  };
+}
+
+function validarDatosVenta(data) {
+  const errores = [];
+
+  if (!data.clienteNombre) {
+    errores.push('Debes ingresar el nombre del cliente.');
+  }
+
+  if (!data.fechaVenta) {
+    errores.push('Debes indicar la fecha de la venta.');
+  }
+
+  if (!data.origenCodigo) {
+    errores.push('Debes seleccionar el origen.');
+  }
+
+  const productosValidos = data.productos.filter(item => item.nombre);
+  if (!productosValidos.length) {
+    errores.push('Debes ingresar al menos un producto.');
+  }
+
+  data.productos.forEach(item => {
+    if (!item.nombre && (item.cantidad > 0 || item.precioUnit > 0 || item.descuento > 0)) {
+      errores.push(`El producto ${item.index} tiene datos pero no tiene nombre.`);
+    }
+
+    if (item.nombre && item.cantidad <= 0) {
+      errores.push(`La cantidad del producto ${item.index} debe ser mayor que cero.`);
+    }
+
+    if (item.nombre && item.precioUnit < 0) {
+      errores.push(`El precio del producto ${item.index} no puede ser negativo.`);
+    }
+
+    if (item.nombre && item.descuento < 0) {
+      errores.push(`El descuento del producto ${item.index} no puede ser negativo.`);
+    }
+
+    if (item.nombre && item.descuento > (item.cantidad * item.precioUnit)) {
+      errores.push(`El descuento del producto ${item.index} no puede ser mayor que su importe.`);
+    }
+  });
+
+  data.pagos.forEach(item => {
+    const tieneAlgo = item.fecha || item.monto > 0 || item.metodo;
+    if (!tieneAlgo) return;
+
+    if (!item.fecha) {
+      errores.push(`El pago ${item.index} debe tener fecha.`);
+    }
+
+    if (item.monto <= 0) {
+      errores.push(`El pago ${item.index} debe tener un monto mayor que cero.`);
+    }
+
+    if (!item.metodo) {
+      errores.push(`El pago ${item.index} debe tener método de pago.`);
+    }
+  });
+
+  if (data.envio < 0) {
+    errores.push('El envío no puede ser negativo.');
+  }
+
+  if (data.descGlobal < 0) {
+    errores.push('El descuento global no puede ser negativo.');
+  }
+
+  if (data.totalFactura < 0) {
+    errores.push('El total de la factura no es válido.');
+  }
+
+  if (data.pagado > data.totalFactura) {
+    errores.push('El total pagado no puede ser mayor que el total de la factura.');
+  }
+
+  return errores;
+}
+
+async function obtenerClienteId(clienteNombre) {
+  if (
+    selectedCliente &&
+    normalizarTexto(selectedCliente.nombre).toLowerCase() === clienteNombre.toLowerCase()
+  ) {
+    return selectedCliente.id;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('clientes')
+    .select('id, nombre')
+    .ilike('nombre', clienteNombre)
+    .limit(1);
+
+  if (error) throw error;
+
+  if (data && data.length) {
+    selectedCliente = data[0];
+    return data[0].id;
+  }
+
+  const { data: clienteNuevo, error: errorClienteNuevo } = await supabaseClient
+    .from('clientes')
+    .insert([
+      {
+        nombre: clienteNombre,
+        activo: true
+      }
+    ])
+    .select('id, nombre')
+    .single();
+
+  if (errorClienteNuevo) throw errorClienteNuevo;
+
+  selectedCliente = clienteNuevo;
+  return clienteNuevo.id;
+}
+
+async function obtenerProductoId(itemProducto) {
+  if (itemProducto.productoId) {
+    return itemProducto.productoId;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('productos')
+    .select('id, nombre, imagen_url')
+    .ilike('nombre', itemProducto.nombre)
+    .limit(1);
+
+  if (error) throw error;
+
+  if (data && data.length) {
+    itemProducto.row.dataset.productoId = data[0].id;
+    itemProducto.row.dataset.imagenUrl = data[0].imagen_url || '';
+    return data[0].id;
+  }
+
+  const { data: productoNuevo, error: errorProductoNuevo } = await supabaseClient
+    .from('productos')
+    .insert([
+      {
+        nombre: itemProducto.nombre,
+        categoria_producto_id: null,
+        imagen_url: null,
+        activo: true
+      }
+    ])
+    .select('id')
+    .single();
+
+  if (errorProductoNuevo) throw errorProductoNuevo;
+
+  itemProducto.row.dataset.productoId = productoNuevo.id;
+  itemProducto.row.dataset.imagenUrl = '';
+  return productoNuevo.id;
+}
+
+function obtenerMetodoPagoId(nombreMetodo) {
+  return ventaCatalogos.metodosPago[nombreMetodo] || null;
+}
+
+async function insertarFactura(data, clienteId) {
+  const origenFacturaId = ventaCatalogos.origenes[data.origenCodigo];
+  const estadoFacturaId = ventaCatalogos.estadoActivaId;
+
+  if (!origenFacturaId) {
+    throw new Error(`No se encontró el origen ${data.origenCodigo}.`);
+  }
+
+  if (!estadoFacturaId) {
+    throw new Error('No se encontró el estado ACT de factura.');
+  }
+
+  let facturaCodigo = generarCodigoFactura();
+
+  for (let intento = 0; intento < 3; intento += 1) {
+    const { data: factura, error } = await supabaseClient
+      .from('facturas')
+      .insert([
+        {
+          factura_codigo: facturaCodigo,
+          fecha: data.fechaVenta,
+          cliente_id: clienteId,
+          subtotal_factura: data.subtotalFactura,
+          envio: data.envio,
+          desc_global: data.descGlobal,
+          total_factura: data.totalFactura,
+          pagado: data.pagado,
+          estado_factura_id: estadoFacturaId,
+          origen_factura_id: origenFacturaId,
+          observaciones: null
+        }
+      ])
+      .select('id, factura_codigo')
+      .single();
+
+    if (!error) {
+      return factura;
+    }
+
+    const esDuplicado = String(error.message || '').toLowerCase().includes('duplicate')
+      || String(error.details || '').toLowerCase().includes('already exists')
+      || error.code === '23505';
+
+    if (!esDuplicado) {
+      throw error;
+    }
+
+    facturaCodigo = generarCodigoFactura();
+  }
+
+  throw new Error('No fue posible generar un código único para la factura.');
+}
+
+async function insertarDetalleFactura(facturaId, productos) {
+  const detalles = [];
+
+  for (const item of productos) {
+    if (!item.nombre) continue;
+
+    const productoId = await obtenerProductoId(item);
+
+    detalles.push({
+      factura_id: facturaId,
+      producto_id: productoId,
+      cantidad: item.cantidad,
+      precio_unit: item.precioUnit,
+      desc_prod: item.descuento,
+      subtotal: item.subtotal,
+      imagen_producto: item.imagenUrl || null
+    });
+  }
+
+  if (!detalles.length) {
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('detalle_factura')
+    .insert(detalles);
+
+  if (error) throw error;
+}
+
+async function insertarPagosFactura(facturaId, clienteId, pagos) {
+  const pagosValidos = pagos.filter(item => item.fecha && item.monto > 0 && item.metodo);
+
+  if (!pagosValidos.length) {
+    return;
+  }
+
+  const payload = pagosValidos.map((item, index) => {
+    const metodoPagoId = obtenerMetodoPagoId(item.metodo);
+
+    if (!metodoPagoId) {
+      throw new Error(`No se encontró el método de pago "${item.metodo}".`);
+    }
+
+    return {
+      pago_codigo: generarCodigoPago(index),
+      factura_id: facturaId,
+      cliente_id: clienteId,
+      tipo_pago_id: null,
+      metodo_pago_id: metodoPagoId,
+      fecha: item.fecha,
+      monto: item.monto,
+      nota: null,
+      activo: true
+    };
+  });
+
+  const { error } = await supabaseClient
+    .from('pagos_factura')
+    .insert(payload);
+
+  if (error) throw error;
+}
+
+function setEstadoBotonGuardar(guardando) {
+  const btn = document.getElementById('btnGuardarVenta');
+  if (!btn) return;
+
+  btn.disabled = guardando;
+  btn.textContent = guardando ? 'Guardando...' : 'Guardar venta';
+}
+
+async function guardarVentaDesdeFormulario() {
+  try {
+    setEstadoBotonGuardar(true);
+
+    await cargarCatalogosVenta();
+
+    const data = obtenerDatosVentaFormulario();
+    const errores = validarDatosVenta(data);
+
+    if (errores.length) {
+      alert(errores.join('\n'));
+      return;
+    }
+
+    const clienteId = await obtenerClienteId(data.clienteNombre);
+    const factura = await insertarFactura(data, clienteId);
+
+    await insertarDetalleFactura(factura.id, data.productos);
+    await insertarPagosFactura(factura.id, clienteId, data.pagos);
+
+    alert(`Venta guardada correctamente.\nCódigo: ${factura.factura_codigo}`);
+    limpiarFormularioVenta();
+  } catch (error) {
+    console.error('Error guardando venta:', error);
+    alert(error.message || 'Ocurrió un error al guardar la venta.');
+  } finally {
+    setEstadoBotonGuardar(false);
+  }
+}
+
+/* =========================
+   UTILIDADES
+========================= */
 
 function formatearMoneda(valor) {
   return `C$ ${Number(valor || 0).toLocaleString('en-US', {
