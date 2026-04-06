@@ -109,17 +109,18 @@
         <section class="module-card">
           <div class="module-header">
             <h2>Registro de venta</h2>
-            <p>Base inicial del módulo de ventas</p>
           </div>
 
           <div class="venta-grid">
-            <div class="field-group">
+            <div class="field-group autocomplete-group">
               <label for="clienteVenta">Nombre del cliente</label>
               <input
                 type="text"
                 id="clienteVenta"
                 placeholder="Escribe el nombre del cliente"
+                autocomplete="off"
               >
+              <div id="clienteSuggestions" class="suggestions hidden"></div>
             </div>
 
             <div class="field-group">
@@ -164,10 +165,10 @@
 
           <div class="module-subcard">
             <h3>Productos</h3>
-            <p class="helper-text">
-              Aquí luego agregaremos la tabla dinámica de productos, descuentos e imágenes.
-            </p>
-            <button type="button" class="btn-secondary-soft">+ Añadir producto</button>
+            <div id="productosContainer" class="dynamic-list"></div>
+            <button type="button" id="btnAddProducto" class="btn-secondary-soft">
+              + Añadir producto
+            </button>
           </div>
 
           <div class="venta-grid">
@@ -184,28 +185,28 @@
 
           <div class="module-subcard">
             <h3>Pagos</h3>
-            <p class="helper-text">
-              Aquí luego agregaremos pagos múltiples, método de pago y validación de saldo.
-            </p>
-            <button type="button" class="btn-secondary-soft">+ Agregar pago</button>
+            <div id="pagosContainer" class="dynamic-list"></div>
+            <button type="button" id="btnAddPago" class="btn-secondary-soft">
+              + Agregar pago
+            </button>
           </div>
 
           <div class="summary-card">
             <div class="summary-row">
               <span>Subtotal</span>
-              <strong>C$ 0.00</strong>
+              <strong id="subtotalResumen">C$ 0.00</strong>
             </div>
             <div class="summary-row">
               <span>Total</span>
-              <strong>C$ 0.00</strong>
+              <strong id="totalResumen">C$ 0.00</strong>
             </div>
             <div class="summary-row">
               <span>Pagado</span>
-              <strong>C$ 0.00</strong>
+              <strong id="pagadoResumen">C$ 0.00</strong>
             </div>
             <div class="summary-row total-row">
               <span>Saldo pendiente</span>
-              <strong>C$ 0.00</strong>
+              <strong id="saldoResumen">C$ 0.00</strong>
             </div>
           </div>
 
