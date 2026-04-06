@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   configurarMenuMovil();
   configurarOrigenVenta();
   actualizarSeccionActiva('Inicio');
-  inicializarFormularioVenta();
 
   console.log('Cliente Supabase listo');
 
@@ -114,6 +113,13 @@ function configurarMenuMovil() {
       document.getElementById(targetView).classList.add('active-section');
       actualizarSeccionActiva(sectionName);
       cerrarMenuMovil();
+
+      // 👇 SOLO cuando entras a ventas
+      if (targetView === 'ventaView') {
+        if (!document.querySelector('.producto-row')) {
+          inicializarFormularioVenta();
+        }
+      }
     });
   });
 }
