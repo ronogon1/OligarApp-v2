@@ -923,6 +923,10 @@ function obtenerDatosVentaFormulario() {
     pagos.reduce((acc, item) => acc + item.monto, 0)
   );
 
+  const saldoPendiente = redondear2(
+    Math.max(totalFactura - pagado, 0)
+  );
+
   return {
     clienteNombre,
     fechaVenta,
@@ -932,6 +936,7 @@ function obtenerDatosVentaFormulario() {
     subtotalFactura,
     totalFactura,
     pagado,
+    saldoPendiente,
     productos,
     pagos
   };
@@ -1244,7 +1249,13 @@ async function guardarVentaDesdeFormulario() {
 function mostrarFactura(data, factura, clienteNombre) {
   const modal = document.getElementById('facturaModal');
 
-  // Logo y título según origen
+  const subtotalFactura = Number(data.subtotalFactura || 0);
+  const envio = Number(data.envio || 0);
+  const descGlobal = Number(data.descGlobal || 0);
+  const totalFactura = Number(data.totalFactura || 0);
+  const pagado = Number(data.pagado || 0);
+  const saldoPendiente = Number(data.saldoPendiente || 0);
+
   if (data.origenCodigo === 'CRO') {
     document.getElementById('facturaLogo').src = 'assets/logos/logo_oligar_crochet.png';
     document.getElementById('facturaTitulo').textContent = 'OLIGAR CROCHET';
@@ -1254,68 +1265,73 @@ function mostrarFactura(data, factura, clienteNombre) {
   }
 
   document.getElementById('facturaCodigo').textContent = `Factura N°: ${factura.factura_codigo}`;
-  document.getElementById('facturaFecha').textContent = `Fecha: ${data.fechaVenta}`;
-  document.getElementById('facturaCliente').textContent = `Cliente: ${clienteNombre}`;
+  document.getElementById('facturaFecha').textContent = `Fecha: ${formatearFechaFactura(data.fechaVenta)}`;
+  document.getElementById('facturaCliente').innerHTML = `<strong>Cliente:</strong> ${escapeHtml(clienteNombre)}`;
 
-  // PRODUCTOS
   const body = document.getElementById('facturaProductosBody');
   body.innerHTML = '';
 
-  data.productos.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'factura-item';
+  data.productos
+    .filter(p => p.nombre)
+    .forEach(p => {
+      const cantidad = Number(p.cantidad || 0);
+      const precioUnit = Number(p.precioUnit || 0);
+      const descuento = Number(p.descuento || 0);
+      const subtotal = Number(p.subtotal || 0);
 
-    div.innerHTML = `
-      <div>
-        <div>${p.cantidad}x ${p.nombre}</div>
-        <div class="factura-item-desc">
-          Precio unitario: C$ ${p.precioUnit.toFixed(2)}
-          ${p.descuento > 0 ? ` | <span class="descuento">Desc: C$ ${p.descuento.toFixed(2)}</span>` : ''}
+      const div = document.createElement('div');
+      div.className = 'factura-item';
+
+      div.innerHTML = `
+        <div>
+          <div>${cantidad}x ${escapeHtml(p.nombre)}</div>
+          <div class="factura-item-desc">
+            Precio unitario: C$ ${precioUnit.toFixed(2)}
+            ${descuento > 0 ? ` | <span class="descuento">Desc: C$ ${descuento.toFixed(2)}</span>` : ''}
+          </div>
         </div>
-      </div>
-      <div>C$ ${p.subtotal.toFixed(2)}</div>
-    `;
+        <div>C$ ${subtotal.toFixed(2)}</div>
+      `;
 
-    body.appendChild(div);
-  });
+      body.appendChild(div);
+    });
 
-  // TOTALES
   const totales = document.getElementById('facturaTotales');
   totales.innerHTML = `
-    Subtotal: C$ ${data.subtotalFactura.toFixed(2)}<br>
-    Envío: C$ ${data.envio.toFixed(2)}<br>
-    ${data.descGlobal > 0 ? `Descuento: C$ ${data.descGlobal.toFixed(2)}<br>` : ''}
-    <strong>Total: C$ ${data.totalFactura.toFixed(2)}</strong>
+    <div>Subtotal: C$ ${subtotalFactura.toFixed(2)}</div>
+    <div>Envío: C$ ${envio.toFixed(2)}</div>
+    ${descGlobal > 0 ? `<div>Descuento global: C$ ${descGlobal.toFixed(2)}</div>` : ''}
+    <div><strong>Total: C$ ${totalFactura.toFixed(2)}</strong></div>
   `;
 
-  // PAGOS
   const pagos = document.getElementById('facturaPagos');
-  if (data.saldoPendiente === 0) {
-    pagos.innerHTML = `<div class="cancelado">CANCELADO</div>`;
+  if (saldoPendiente <= 0) {
+    pagos.innerHTML = `
+      <div>Pagado: C$ ${pagado.toFixed(2)}</div>
+      <div class="cancelado">CANCELADO</div>
+    `;
   } else {
     pagos.innerHTML = `
-      Pagado: C$ ${data.pagado.toFixed(2)} |
-      Saldo pendiente: C$ ${data.saldoPendiente.toFixed(2)}
+      <div>Pagado: C$ ${pagado.toFixed(2)} &nbsp; | &nbsp; Saldo pendiente: C$ ${saldoPendiente.toFixed(2)}</div>
     `;
   }
 
-  // IMÁGENES
   const imgContainer = document.getElementById('facturaImagenes');
   imgContainer.innerHTML = '';
 
-  data.productos.forEach(p => {
-    if (!p.imagenUrl) return;
+  data.productos
+    .filter(p => p.nombre && p.imagenUrl)
+    .forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'factura-img-card';
 
-    const div = document.createElement('div');
-    div.className = 'factura-img-card';
+      div.innerHTML = `
+        <img src="${p.imagenUrl}" alt="${escapeHtml(p.nombre)}">
+        <span>${escapeHtml(p.nombre)}</span>
+      `;
 
-    div.innerHTML = `
-      <img src="${p.imagenUrl}">
-      <span>${p.nombre}</span>
-    `;
-
-    imgContainer.appendChild(div);
-  });
+      imgContainer.appendChild(div);
+    });
 
   modal.classList.remove('hidden');
 }
@@ -1323,7 +1339,6 @@ function mostrarFactura(data, factura, clienteNombre) {
 function cerrarFactura() {
   document.getElementById('facturaModal').classList.add('hidden');
 }
-
 
 
 /* =========================
@@ -1335,6 +1350,15 @@ function formatearMoneda(valor) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
+}
+
+function formatearFechaFactura(fechaIso) {
+  if (!fechaIso || !fechaIso.includes('-')) {
+    return fechaIso || '';
+  }
+
+  const [year, month, day] = fechaIso.split('-');
+  return `${day}/${month}/${year}`;
 }
 
 function escapeHtml(texto) {
