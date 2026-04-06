@@ -208,7 +208,9 @@ img {
 }
 
 .btn-menu {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: var(--deep-lilac);
   color: var(--white);
@@ -488,12 +490,6 @@ img {
     display: none;
   }
 
-  .btn-menu {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
   #userEmail {
     display: none;
   }
@@ -585,6 +581,9 @@ img {
 
 @media (min-width: 901px) {
   .mobile-menu {
-    display: none !important;
+    width: 260px;
+    left: auto;
+    right: 20px;
+    top: 82px;
   }
 }
