@@ -11,55 +11,83 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnLogin').addEventListener('click', login);
   document.getElementById('btnLogout').addEventListener('click', logout);
 
-  async function login() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const errorEl = document.getElementById('loginError');
+  console.log('Cliente Supabase listo');
 
-    errorEl.textContent = '';
+  await verificarSesionActual();
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      errorEl.textContent = error.message;
-      return;
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      mostrarApp(session.user);
+    } else {
+      mostrarLogin();
     }
-
-    mostrarApp(data.user);
-  }
-
-  async function logout() {
-    await supabaseClient.auth.signOut();
-    mostrarLogin();
-  }
-
-  function mostrarApp(user) {
-    document.getElementById('loginView').classList.remove('active');
-    document.getElementById('appView').classList.add('active');
-
-    document.getElementById('userEmail').textContent = user.email;
-  }
-
-  function mostrarLogin() {
-    document.getElementById('appView').classList.remove('active');
-    document.getElementById('loginView').classList.add('active');
-  }
+  });
 });
 
-async function probarConexion() {
-  try {
-    const { data, error } = await supabaseClient
-      .from('estados_factura')
-      .select('codigo, nombre')
-      .limit(5);
+async function verificarSesionActual() {
+  const { data, error } = await supabaseClient.auth.getSession();
 
-    if (error) throw error;
-
-    console.log('Conexión OK. Datos de prueba:', data);
-  } catch (err) {
-    console.error('Error de conexión con Supabase:', err.message);
+  if (error) {
+    console.error('Error verificando sesión:', error.message);
+    mostrarLogin();
+    return;
   }
+
+  if (data.session?.user) {
+    mostrarApp(data.session.user);
+  } else {
+    mostrarLogin();
+  }
+}
+
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('loginError');
+
+  errorEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    errorEl.textContent = error.message;
+    return;
+  }
+
+  mostrarApp(data.user);
+}
+
+async function logout() {
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    console.error('Error al cerrar sesión:', error.message);
+    return;
+  }
+
+  mostrarLogin();
+}
+
+function mostrarApp(user) {
+  document.getElementById('loginView').classList.remove('active');
+  document.getElementById('loginView').classList.add('hidden');
+
+  document.getElementById('appView').classList.remove('hidden');
+  document.getElementById('appView').classList.add('active');
+
+  document.getElementById('userEmail').textContent = user.email;
+}
+
+function mostrarLogin() {
+  document.getElementById('appView').classList.remove('active');
+  document.getElementById('appView').classList.add('hidden');
+
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('loginView').classList.add('active');
+
+  document.getElementById('userEmail').textContent = '';
+  document.getElementById('password').value = '';
 }
