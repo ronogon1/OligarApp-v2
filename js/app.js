@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     errorEl.textContent = '';
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
       email,
       password
     });
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function logout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     mostrarLogin();
   }
 
