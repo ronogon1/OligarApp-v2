@@ -43,57 +43,8 @@ img {
   display: block;
 }
 
-.app-shell {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-}
-
-.welcome-card {
-  width: min(100%, 760px);
-  background: var(--floral-white);
-  border: 1px solid var(--thistle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  padding: 32px 24px;
-  text-align: center;
-}
-
-.logo-principal {
-  width: 250px;
-  margin: 0 auto 20px;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 2.6rem);
-  font-weight: 700;
-  color: var(--mauve-bark);
-}
-
-.subtitle {
-  margin: 8px 0 28px;
-  font-size: 1rem;
-  color: var(--deep-lilac);
-}
-
-.brand-logos {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.logo-secundario {
-  width: 250px;
-  max-height: 160px;
-  object-fit: contain;
-  background: var(--white);
-  border: 1px solid var(--dust-grey);
-  border-radius: var(--radius-md);
-  padding: 12px;
+.hidden {
+  display: none !important;
 }
 
 .view {
@@ -101,47 +52,73 @@ h1 {
 }
 
 .view.active {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  display: block;
 }
 
-.hidden {
-  display: none;
+/* LOGIN */
+#loginView.active {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
 }
 
 .login-container {
-  background: white;
+  background: var(--white);
   padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  width: 300px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+  width: min(100%, 360px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  text-align: center;
+}
+
+.login-logo {
+  width: 200px;
+  margin: 0 auto 6px;
+}
+
+.login-container h2 {
+  margin: 0 0 8px;
+  color: var(--mauve-bark);
 }
 
 .login-container input {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  padding: 12px 14px;
+  border: 1px solid var(--dust-grey);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--mauve-bark);
+  font: inherit;
 }
 
-.login-container button {
-  padding: 10px;
-  background: #1D417F;
-  color: white;
+.login-container input:focus {
+  outline: none;
+  border-color: var(--deep-lilac);
+  box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.12);
+}
+
+.btn-primary {
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font: inherit;
+  font-weight: 600;
   cursor: pointer;
+  background: var(--deep-lilac);
+  color: var(--white);
 }
 
 .error {
-  color: red;
-  font-size: 12px;
+  color: var(--oxblood);
+  font-size: 0.9rem;
+  min-height: 20px;
+  margin: 0;
 }
 
+/* HEADER APP */
 .app-header {
   position: fixed;
   top: 0;
@@ -167,8 +144,8 @@ h1 {
 }
 
 .app-header-logo {
-  width: 120px;
-  height: 80px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
   border-radius: 10px;
   background: var(--white);
@@ -225,12 +202,59 @@ h1 {
   border-radius: 12px;
   padding: 10px 14px;
   font: inherit;
-  font-weight: 400;
+  font-weight: 600;
   cursor: pointer;
 }
 
+.btn-menu {
+  display: none;
+  border: none;
+  background: var(--deep-lilac);
+  color: var(--white);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* MOBILE MENU */
+.mobile-menu {
+  position: fixed;
+  top: 82px;
+  left: 12px;
+  right: 12px;
+  background: var(--white);
+  border: 1px solid var(--thistle);
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+  padding: 12px;
+  z-index: 999;
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-menu-btn {
+  width: 100%;
+  border: 1px solid var(--dust-grey);
+  background: var(--floral-white);
+  color: var(--mauve-bark);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mobile-menu-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* CONTENT */
 .app-content {
-  padding: 300px 24px 32px;
+  padding: 130px 24px 32px;
 }
 
 .app-section {
@@ -241,6 +265,55 @@ h1 {
   display: block;
 }
 
+/* HOME */
+.welcome-card {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  background: var(--floral-white);
+  border: 1px solid var(--thistle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.logo-principal {
+  width: 250px;
+  margin: 0 auto 20px;
+}
+
+.welcome-card h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-weight: 700;
+  color: var(--mauve-bark);
+}
+
+.subtitle {
+  margin: 8px 0 28px;
+  font-size: 1rem;
+  color: var(--deep-lilac);
+}
+
+.brand-logos {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.logo-secundario {
+  width: 160px;
+  max-height: 160px;
+  object-fit: contain;
+  background: var(--white);
+  border: 1px solid var(--dust-grey);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+/* MODULE */
 .module-card {
   width: min(100%, 980px);
   margin: 0 auto;
@@ -310,7 +383,7 @@ h1 {
 }
 
 .helper-text {
-  margin: 0 0 14px;
+  margin: 12px 0 0;
   color: var(--deep-lilac);
   font-size: 0.95rem;
 }
@@ -332,10 +405,25 @@ h1 {
   cursor: pointer;
 }
 
+.origin-logo-btn {
+  background: var(--white);
+  padding: 10px;
+  min-width: 140px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.origin-logo {
+  max-width: 110px;
+  max-height: 60px;
+  object-fit: contain;
+}
+
 .origin-btn.active-origin {
-  background: var(--deep-lilac);
-  color: var(--white);
-  border-color: var(--deep-lilac);
+  border: 2px solid var(--deep-lilac);
+  box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.12);
 }
 
 .btn-secondary-soft {
@@ -389,64 +477,22 @@ h1 {
   cursor: pointer;
 }
 
+/* RESPONSIVE */
 @media (max-width: 900px) {
-  .app-header {
-    height: auto;
-    min-height: 120px;
-    padding: 14px 16px;
-    flex-direction: column;
-    align-items: stretch;
+  .desktop-nav {
+    display: none;
   }
 
-  .app-brand,
-  .user-info,
-  .app-nav {
+  .btn-menu {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    min-width: unset;
   }
 
-  .app-content {
-    padding-top: 350px;
-  }
-}
-
-@media (max-width: 640px) {
-  .venta-grid {
-    grid-template-columns: 1fr;
+  #userEmail {
+    display: none;
   }
 
-  .module-card {
-    padding: 22px 16px;
-  }
-
-  .btn-primary-wide {
-    width: 100%;
-    min-width: unset;
-  }
-}
-
-.origin-logo-btn {
-  background: var(--white);
-  padding: 10px;
-  min-width: 140px;
-  min-height: 90px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.origin-logo {
-  max-width: 110px;
-  max-height: 60px;
-  object-fit: contain;
-}
-
-.origin-btn.active-origin {
-  border: 2px solid var(--deep-lilac);
-  box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.12);
-}
-
-@media (max-width: 900px) {
   .app-header {
     padding: 10px 14px;
     display: grid;
@@ -471,38 +517,25 @@ h1 {
     font-size: 1.7rem;
   }
 
-  .app-nav {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: nowrap;
-  }
-
-  .nav-btn,
-  .btn-logout {
-    padding: 10px 14px;
-    font-size: 0.95rem;
-    border-radius: 12px;
-    white-space: nowrap;
-  }
-
   .user-info {
-    min-width: unset;
+    width: 100%;
     justify-content: center;
     gap: 10px;
+    min-width: unset;
   }
 
-  #userEmail {
-    display: none;
+  .btn-logout,
+  .btn-menu {
+    flex: 1;
+    max-width: 180px;
   }
 
   .app-content {
-    padding-top: 300px;
+    padding-top: 170px;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .app-header {
     padding: 10px 12px;
     gap: 8px;
@@ -517,25 +550,36 @@ h1 {
     height: 38px;
   }
 
-  .app-nav {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-  }
-
-  .nav-btn,
-  .btn-logout {
-    width: 100%;
-    padding: 10px 8px;
-    font-size: 0.9rem;
-  }
-
   .user-info {
     width: 100%;
   }
 
+  .btn-logout,
+  .btn-menu {
+    width: 100%;
+    max-width: unset;
+  }
+
+  .venta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .module-card {
+    padding: 22px 16px;
+  }
+
+  .btn-primary-wide {
+    width: 100%;
+    min-width: unset;
+  }
+
   .app-content {
-    padding-top: 250px;
+    padding-top: 190px;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-menu {
+    display: none !important;
   }
 }

@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btnLogin').addEventListener('click', login);
   document.getElementById('btnLogout').addEventListener('click', logout);
+  document.getElementById('btnMenuToggle').addEventListener('click', toggleMobileMenu);
 
   configurarNavegacion();
+  configurarMenuMovil();
   configurarOrigenVenta();
 
   console.log('Cliente Supabase listo');
@@ -44,6 +46,33 @@ function configurarNavegacion() {
 
       btn.classList.add('active');
       document.getElementById(targetView).classList.add('active-section');
+
+      cerrarMenuMovil();
+    });
+  });
+}
+
+function configurarMenuMovil() {
+  const mobileButtons = document.querySelectorAll('.mobile-menu-btn[data-view]');
+
+  mobileButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetView = btn.dataset.view;
+
+      document.querySelectorAll('.nav-btn').forEach(item => {
+        item.classList.remove('active');
+
+        if (item.dataset.view === targetView) {
+          item.classList.add('active');
+        }
+      });
+
+      document.querySelectorAll('.app-section').forEach(section => {
+        section.classList.remove('active-section');
+      });
+
+      document.getElementById(targetView).classList.add('active-section');
+      cerrarMenuMovil();
     });
   });
 }
@@ -57,6 +86,16 @@ function configurarOrigenVenta() {
       btn.classList.add('active-origin');
     });
   });
+}
+
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobileMenu');
+  menu.classList.toggle('hidden');
+}
+
+function cerrarMenuMovil() {
+  const menu = document.getElementById('mobileMenu');
+  menu.classList.add('hidden');
 }
 
 async function verificarSesionActual() {
@@ -126,4 +165,5 @@ function mostrarLogin() {
 
   document.getElementById('userEmail').textContent = '';
   document.getElementById('password').value = '';
+  cerrarMenuMovil();
 }
