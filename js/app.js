@@ -10,6 +10,9 @@ const ventaCatalogos = {
   metodosPago: {}
 };
 
+const STORAGE_BUCKET_PRODUCTOS = 'productos';
+
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('OligarApp v2 iniciada');
 
@@ -361,8 +364,10 @@ function agregarFilaProducto() {
       id="${rowId}"
       data-row-id="${productoRowCounter}"
       data-producto-id=""
+      data-producto-codigo=""
       data-imagen-url=""
       data-imagen-local=""
+      data-imagen-delete="0"
       data-subtotal="0"
     >
       <h4 class="item-card-title">Producto ${productoRowCounter}</h4>
@@ -401,6 +406,9 @@ function agregarFilaProducto() {
         <div class="field-group-inline">
           <label>Imagen</label>
           <input type="file" class="producto-imagen-file" accept="image/*">
+          <button type="button" class="btn-remove-image hidden">
+            Quitar imagen
+          </button>
         </div>
 
         <div class="field-group-inline">
@@ -426,6 +434,7 @@ function agregarFilaProducto() {
 
 function configurarFilaProducto(row) {
   const btnRemove = row.querySelector('.btn-remove');
+  const btnRemoveImage = row.querySelector('.btn-remove-image');
   const nombreInput = row.querySelector('.producto-nombre');
   const cantidadInput = row.querySelector('.producto-cantidad');
   const precioInput = row.querySelector('.producto-precio');
@@ -439,17 +448,26 @@ function configurarFilaProducto(row) {
   });
 
   nombreInput.addEventListener('input', () => {
-    row.dataset.productoId = '';
-    row.dataset.imagenUrl = '';
+    limpiarProductoSeleccionado(row);
     manejarBusquedaProducto(row);
   });
 
   cantidadInput.addEventListener('input', () => recalcularFilaProducto(row));
   precioInput.addEventListener('input', () => recalcularFilaProducto(row));
   descuentoInput.addEventListener('input', () => recalcularFilaProducto(row));
+
+  fileInput.addEventListener('click', event => {
+    advertirCambioImagenProducto(row, event);
+  });
+
   fileInput.addEventListener('change', () => manejarPreviewImagen(row));
 
+  btnRemoveImage.addEventListener('click', () => {
+    manejarEliminarImagenProducto(row);
+  });
+
   recalcularFilaProducto(row);
+  actualizarEstadoVisualImagen(row);
 }
 
 function renumerarProductos() {
@@ -520,13 +538,25 @@ function renderProductoSuggestions(row, productos) {
       if (!producto) return;
 
       row.dataset.productoId = producto.id;
+      row.dataset.productoCodigo = producto.producto_codigo || '';
       row.dataset.imagenUrl = producto.imagen_url || '';
+      row.dataset.imagenLocal = '';
+      row.dataset.imagenDelete = '0';
+
       row.querySelector('.producto-nombre').value = producto.nombre;
+
+      const fileInput = row.querySelector('.producto-imagen-file');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
       box.innerHTML = '';
       box.classList.add('hidden');
 
       if (producto.imagen_url) {
         mostrarPreviewExistente(row, producto.imagen_url);
+      } else {
+        limpiarPreviewImagenProducto(row);
       }
 
       recalcularFilaProducto(row);
@@ -535,13 +565,15 @@ function renderProductoSuggestions(row, productos) {
 }
 
 function manejarPreviewImagen(row) {
-  const input = row.querySelector('.producto-imagen-file');
-  const file = input.files?.[0];
+  const file = obtenerArchivoImagenFila(row);
 
   if (!file) {
     row.dataset.imagenLocal = '';
+    actualizarEstadoVisualImagen(row);
     return;
   }
+
+  row.dataset.imagenDelete = '0';
 
   const reader = new FileReader();
   reader.onload = e => {
@@ -558,6 +590,8 @@ function mostrarPreviewExistente(row, src) {
 
   img.src = src;
   preview.classList.remove('hidden');
+
+  actualizarEstadoVisualImagen(row);
 }
 
 function recalcularFilaProducto(row) {
@@ -611,8 +645,9 @@ async function crearProductoNuevo(itemProducto, origenCodigo) {
 
     if (!error) {
       itemProducto.row.dataset.productoId = data.id;
+      itemProducto.row.dataset.productoCodigo = data.producto_codigo || '';
       itemProducto.row.dataset.imagenUrl = data.imagen_url || '';
-      return data.id;
+      return data;
     }
 
     if (!esErrorDuplicado(error)) {
@@ -622,6 +657,235 @@ async function crearProductoNuevo(itemProducto, origenCodigo) {
 
   throw new Error(`No fue posible generar un código único para el producto "${itemProducto.nombre}".`);
 }
+
+function limpiarProductoSeleccionado(row) {
+  row.dataset.productoId = '';
+  row.dataset.productoCodigo = '';
+  row.dataset.imagenUrl = '';
+  row.dataset.imagenLocal = '';
+  row.dataset.imagenDelete = '0';
+
+  const fileInput = row.querySelector('.producto-imagen-file');
+  if (fileInput) {
+    fileInput.value = '';
+  }
+
+  limpiarPreviewImagenProducto(row);
+}
+
+function limpiarPreviewImagenProducto(row) {
+  const preview = row.querySelector('.product-preview');
+  const img = row.querySelector('.producto-preview-img');
+
+  if (img) {
+    img.src = '';
+  }
+
+  if (preview) {
+    preview.classList.add('hidden');
+  }
+
+  actualizarEstadoVisualImagen(row);
+}
+
+function actualizarEstadoVisualImagen(row) {
+  const btnRemoveImage = row.querySelector('.btn-remove-image');
+  if (!btnRemoveImage) return;
+
+  const tieneImagen = Boolean(row.dataset.imagenUrl || row.dataset.imagenLocal);
+  const marcadaParaEliminar = row.dataset.imagenDelete === '1';
+
+  if (tieneImagen && !marcadaParaEliminar) {
+    btnRemoveImage.classList.remove('hidden');
+  } else {
+    btnRemoveImage.classList.add('hidden');
+  }
+}
+
+function advertirCambioImagenProducto(row, event) {
+  const tieneImagenPersistida = Boolean(row.dataset.imagenUrl);
+  const tieneProductoExistente = Boolean(row.dataset.productoId);
+
+  if (!tieneProductoExistente || !tieneImagenPersistida) {
+    return;
+  }
+
+  const ok = confirm(
+    'Este producto ya tiene una imagen. La nueva imagen sustituirá la imagen anterior al guardar la venta. ¿Deseas continuar?'
+  );
+
+  if (!ok) {
+    event.preventDefault();
+  }
+}
+
+function manejarEliminarImagenProducto(row) {
+  const fileInput = row.querySelector('.producto-imagen-file');
+  const tieneImagenPersistida = Boolean(row.dataset.imagenUrl);
+  const tieneImagenLocal = Boolean(row.dataset.imagenLocal);
+
+  if (!tieneImagenPersistida && !tieneImagenLocal) {
+    return;
+  }
+
+  const mensaje = tieneImagenPersistida
+    ? 'La imagen de este producto se borrará de la base de datos y del Storage al guardar la venta. ¿Deseas continuar?'
+    : 'La imagen seleccionada se quitará de esta venta. ¿Deseas continuar?';
+
+  const ok = confirm(mensaje);
+  if (!ok) return;
+
+  row.dataset.imagenDelete = '1';
+  row.dataset.imagenLocal = '';
+
+  if (fileInput) {
+    fileInput.value = '';
+  }
+
+  limpiarPreviewImagenProducto(row);
+}
+
+function obtenerArchivoImagenFila(row) {
+  return row.querySelector('.producto-imagen-file')?.files?.[0] || null;
+}
+
+function obtenerExtensionArchivo(file) {
+  const nombre = file?.name || '';
+  const partes = nombre.split('.');
+  const extensionNombre = partes.length > 1 ? partes.pop().toLowerCase() : '';
+
+  if (extensionNombre) {
+    return extensionNombre;
+  }
+
+  const mime = file?.type || '';
+  if (mime.includes('png')) return 'png';
+  if (mime.includes('webp')) return 'webp';
+  if (mime.includes('gif')) return 'gif';
+  return 'jpg';
+}
+
+function construirRutaImagenProducto(productoCodigo, file) {
+  const extension = obtenerExtensionArchivo(file);
+  return `${productoCodigo}/${productoCodigo}.${extension}`;
+}
+
+function obtenerStoragePathDesdePublicUrl(url) {
+  if (!url) return '';
+
+  try {
+    const marker = `/storage/v1/object/public/${STORAGE_BUCKET_PRODUCTOS}/`;
+    const parsed = new URL(url);
+
+    const index = parsed.pathname.indexOf(marker);
+    if (index === -1) return '';
+
+    return decodeURIComponent(parsed.pathname.slice(index + marker.length));
+  } catch (_error) {
+    return '';
+  }
+}
+
+async function subirImagenProductoStorage(file, path) {
+  const { error } = await supabaseClient
+    .storage
+    .from(STORAGE_BUCKET_PRODUCTOS)
+    .upload(path, file, {
+      upsert: true,
+      cacheControl: '3600',
+      contentType: file.type || undefined
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  const { data } = supabaseClient
+    .storage
+    .from(STORAGE_BUCKET_PRODUCTOS)
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+async function eliminarImagenStorage(url) {
+  const path = obtenerStoragePathDesdePublicUrl(url);
+  if (!path) return;
+
+  const { error } = await supabaseClient
+    .storage
+    .from(STORAGE_BUCKET_PRODUCTOS)
+    .remove([path]);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function actualizarImagenProductoBD(productoId, imagenUrl) {
+  const { error } = await supabaseClient
+    .from('productos')
+    .update({
+      imagen_url: imagenUrl
+    })
+    .eq('id', productoId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function sincronizarImagenProducto(itemProducto, producto) {
+  const row = itemProducto.row;
+  const file = obtenerArchivoImagenFila(row);
+  const eliminarImagen = row.dataset.imagenDelete === '1';
+  const imagenActual = producto.imagen_url || row.dataset.imagenUrl || '';
+
+  if (eliminarImagen) {
+    if (imagenActual) {
+      await eliminarImagenStorage(imagenActual);
+      await actualizarImagenProductoBD(producto.id, null);
+    }
+
+    row.dataset.imagenUrl = '';
+    row.dataset.imagenLocal = '';
+    row.dataset.imagenDelete = '0';
+
+    itemProducto.imagenUrl = '';
+    itemProducto.imagenLocal = '';
+
+    limpiarPreviewImagenProducto(row);
+    return null;
+  }
+
+  if (!file) {
+    itemProducto.imagenUrl = imagenActual;
+    return imagenActual || null;
+  }
+
+  const nuevaRuta = construirRutaImagenProducto(producto.producto_codigo, file);
+  const rutaAnterior = obtenerStoragePathDesdePublicUrl(imagenActual);
+
+  const nuevaUrl = await subirImagenProductoStorage(file, nuevaRuta);
+
+  await actualizarImagenProductoBD(producto.id, nuevaUrl);
+
+  if (rutaAnterior && rutaAnterior !== nuevaRuta) {
+    await eliminarImagenStorage(imagenActual);
+  }
+
+  row.dataset.imagenUrl = nuevaUrl;
+  row.dataset.imagenLocal = '';
+  row.dataset.imagenDelete = '0';
+
+  itemProducto.imagenUrl = nuevaUrl;
+  itemProducto.imagenLocal = '';
+
+  mostrarPreviewExistente(row, nuevaUrl);
+
+  return nuevaUrl;
+}
+
 
 /* =========================
    PAGOS
@@ -876,6 +1140,7 @@ function obtenerProductosFormulario() {
       index: index + 1,
       row,
       productoId: row.dataset.productoId || '',
+      productoCodigo: row.dataset.productoCodigo || '',
       imagenUrl: row.dataset.imagenUrl || '',
       imagenLocal: row.dataset.imagenLocal || '',
       nombre,
@@ -1056,7 +1321,20 @@ async function obtenerClienteId(clienteNombre) {
 
 async function obtenerProductoId(itemProducto, origenCodigo) {
   if (itemProducto.productoId) {
-    return itemProducto.productoId;
+    const { data, error } = await supabaseClient
+      .from('productos')
+      .select('id, nombre, producto_codigo, imagen_url')
+      .eq('id', itemProducto.productoId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    itemProducto.row.dataset.productoCodigo = data.producto_codigo || '';
+    itemProducto.row.dataset.imagenUrl = data.imagen_url || '';
+
+    return data;
   }
 
   const { data, error } = await supabaseClient
@@ -1071,8 +1349,9 @@ async function obtenerProductoId(itemProducto, origenCodigo) {
 
   if (data && data.length) {
     itemProducto.row.dataset.productoId = data[0].id;
+    itemProducto.row.dataset.productoCodigo = data[0].producto_codigo || '';
     itemProducto.row.dataset.imagenUrl = data[0].imagen_url || '';
-    return data[0].id;
+    return data[0];
   }
 
   return await crearProductoNuevo(itemProducto, origenCodigo);
@@ -1135,16 +1414,17 @@ async function insertarDetalleFactura(facturaId, productos, origenCodigo) {
   for (const item of productos) {
     if (!item.nombre) continue;
 
-    const productoId = await obtenerProductoId(item, origenCodigo);
+    const producto = await obtenerProductoId(item, origenCodigo);
+    const imagenProducto = await sincronizarImagenProducto(item, producto);
 
     detalles.push({
       factura_id: facturaId,
-      producto_id: productoId,
+      producto_id: producto.id,
       cantidad: item.cantidad,
       precio_unit: item.precioUnit,
       desc_prod: item.descuento,
       subtotal: item.subtotal,
-      imagen_producto: item.imagenUrl || null
+      imagen_producto: imagenProducto || null
     });
   }
 
