@@ -11,7 +11,13 @@ const ventaCatalogos = {
 };
 
 const STORAGE_BUCKET_PRODUCTOS = 'productos';
-
+const MAX_IMAGE_SIZE_BYTES = 1024 * 1024; // 1 MB
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp'
+]
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('OligarApp v2 iniciada');
@@ -573,6 +579,25 @@ function manejarPreviewImagen(row) {
     return;
   }
 
+  const validacion = validarArchivoImagen(file);
+
+  if (!validacion.ok) {
+    alert(validacion.mensaje);
+
+    row.dataset.imagenLocal = '';
+    row.dataset.imagenDelete = '0';
+
+    limpiarInputImagenProducto(row);
+
+    if (row.dataset.imagenUrl) {
+      mostrarPreviewExistente(row, row.dataset.imagenUrl);
+    } else {
+      limpiarPreviewImagenProducto(row);
+    }
+
+    return;
+  }
+
   row.dataset.imagenDelete = '0';
 
   const reader = new FileReader();
@@ -750,18 +775,20 @@ function obtenerArchivoImagenFila(row) {
 }
 
 function obtenerExtensionArchivo(file) {
+  const mime = file?.type || '';
+
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/jpeg' || mime === 'image/jpg') return 'jpg';
+
   const nombre = file?.name || '';
   const partes = nombre.split('.');
   const extensionNombre = partes.length > 1 ? partes.pop().toLowerCase() : '';
 
-  if (extensionNombre) {
-    return extensionNombre;
-  }
+  if (['jpg', 'jpeg'].includes(extensionNombre)) return 'jpg';
+  if (extensionNombre === 'png') return 'png';
+  if (extensionNombre === 'webp') return 'webp';
 
-  const mime = file?.type || '';
-  if (mime.includes('png')) return 'png';
-  if (mime.includes('webp')) return 'webp';
-  if (mime.includes('gif')) return 'gif';
   return 'jpg';
 }
 
@@ -787,6 +814,12 @@ function obtenerStoragePathDesdePublicUrl(url) {
 }
 
 async function subirImagenProductoStorage(file, path) {
+  const validacion = validarArchivoImagen(file);
+
+  if (!validacion.ok) {
+    throw new Error(validacion.mensaje);
+  }
+
   const { error } = await supabaseClient
     .storage
     .from(STORAGE_BUCKET_PRODUCTOS)
@@ -1773,4 +1806,39 @@ async function obtenerSiguienteConsecutivo({
   const codigos = await listarCodigosPorPrefijo(tabla, columna, prefijo);
   const maximo = obtenerMaximoConRegex(codigos, regex);
   return maximo + 1;
+}
+
+function limpiarInputImagenProducto(row) {
+  const fileInput = row.querySelector('.producto-imagen-file');
+  if (fileInput) {
+    fileInput.value = '';
+  }
+}
+
+function validarArchivoImagen(file) {
+  if (!file) {
+    return {
+      ok: false,
+      mensaje: 'No se seleccionó ningún archivo.'
+    };
+  }
+
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return {
+      ok: false,
+      mensaje: 'Formato no permitido. Usa JPG, JPEG, PNG o WEBP.'
+    };
+  }
+
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    return {
+      ok: false,
+      mensaje: 'La imagen seleccionada supera el límite de 1 MB. Reduce su tamaño antes de guardarla.'
+    };
+  }
+
+  return {
+    ok: true,
+    mensaje: ''
+  };
 }
