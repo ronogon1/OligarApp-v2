@@ -1256,17 +1256,34 @@ function mostrarFactura(data, factura, clienteNombre) {
   const pagado = Number(data.pagado || 0);
   const saldoPendiente = Number(data.saldoPendiente || 0);
 
+  const tituloEl = document.getElementById('facturaTitulo');
+  const logoEl = document.getElementById('facturaLogo');
+  const infoEl = document.querySelector('.factura-info');
+
   if (data.origenCodigo === 'CRO') {
-    document.getElementById('facturaLogo').src = 'assets/logos/logo_oligar_crochet.png';
-    document.getElementById('facturaTitulo').textContent = 'Oligar Crochet';
+    logoEl.src = 'assets/logos/logo_oligar_crochet.png';
+    tituloEl.textContent = 'Oligar Crochet';
+    infoEl.innerHTML = `
+      Managua, Nicaragua | Celular: 7841 1119<br>
+      oligar.crochet@gmail.com
+    `;
   } else {
-    document.getElementById('facturaLogo').src = 'assets/logos/logo_oligar_creaciones.png';
-    document.getElementById('facturaTitulo').textContent = 'Oligar Creaciones';
+    logoEl.src = 'assets/logos/logo_oligar_creaciones.png';
+    tituloEl.textContent = 'Oligar Creaciones';
+    infoEl.innerHTML = `
+      Managua, Nicaragua | Celular: 7841 1119<br>
+      oligar.creaciones@gmail.com
+    `;
   }
 
-  document.getElementById('facturaCodigo').textContent = `Factura N°: ${factura.factura_codigo}`;
-  document.getElementById('facturaFecha').textContent = `Fecha: ${formatearFechaFactura(data.fechaVenta)}`;
-  document.getElementById('facturaCliente').innerHTML = `<strong>Cliente:</strong> ${escapeHtml(clienteNombre)}`;
+  document.getElementById('facturaCodigo').textContent =
+    `Factura N°: ${factura.factura_codigo}`;
+
+  document.getElementById('facturaFecha').textContent =
+    `Fecha: ${formatearFechaFactura(data.fechaVenta)}`;
+
+  document.getElementById('facturaCliente').innerHTML =
+    `<strong>Cliente:</strong> ${escapeHtml(clienteNombre)}`;
 
   const body = document.getElementById('facturaProductosBody');
   body.innerHTML = '';
@@ -1286,11 +1303,13 @@ function mostrarFactura(data, factura, clienteNombre) {
         <div>
           <div>${cantidad}x ${escapeHtml(p.nombre)}</div>
           <div class="factura-item-desc">
-            Precio unitario: C$ ${precioUnit.toFixed(2)}
-            ${descuento > 0 ? ` | <span class="descuento">Desc: C$ ${descuento.toFixed(2)}</span>` : ''}
+            Precio unitario: C$ ${formatearMontoFactura(precioUnit)}
+            ${descuento > 0
+              ? ` | <span class="descuento">Desc: C$ ${formatearMontoFactura(descuento)}</span>`
+              : ''}
           </div>
         </div>
-        <div>C$ ${subtotal.toFixed(2)}</div>
+        <div>C$ ${formatearMontoFactura(subtotal)}</div>
       `;
 
       body.appendChild(div);
@@ -1300,36 +1319,36 @@ function mostrarFactura(data, factura, clienteNombre) {
   totales.innerHTML = `
     <div class="factura-total-row">
       <span>Subtotal:</span>
-      <span>C$ ${subtotalFactura.toFixed(2)}</span>
+      <span>C$ ${formatearMontoFactura(subtotalFactura)}</span>
     </div>
     <div class="factura-total-row">
       <span>Envío:</span>
-      <span>C$ ${envio.toFixed(2)}</span>
+      <span>C$ ${formatearMontoFactura(envio)}</span>
     </div>
     ${descGlobal > 0 ? `
       <div class="factura-total-row">
         <span>Descuento global:</span>
-        <span>C$ ${descGlobal.toFixed(2)}</span>
+        <span>C$ ${formatearMontoFactura(descGlobal)}</span>
       </div>
     ` : ''}
     <div class="factura-total-row total-general">
       <span>Total:</span>
-      <span>C$ ${totalFactura.toFixed(2)}</span>
+      <span>C$ ${formatearMontoFactura(totalFactura)}</span>
     </div>
   `;
 
   const pagos = document.getElementById('facturaPagos');
   if (saldoPendiente <= 0) {
     pagos.innerHTML = `
-      <div class="factura-pagado">Pagado: C$ ${pagado.toFixed(2)}</div>
+      <div class="factura-pagado">Pagado: C$ ${formatearMontoFactura(pagado)}</div>
       <div class="cancelado">CANCELADO</div>
     `;
   } else {
     pagos.innerHTML = `
       <div>
-        <span class="factura-pagado">Pagado: C$ ${pagado.toFixed(2)}</span>
+        <span class="factura-pagado">Pagado: C$ ${formatearMontoFactura(pagado)}</span>
         &nbsp; | &nbsp;
-        <span class="factura-saldo">Saldo pendiente: C$ ${saldoPendiente.toFixed(2)}</span>
+        <span class="factura-saldo">Saldo pendiente: C$ ${formatearMontoFactura(saldoPendiente)}</span>
       </div>
     `;
   }
@@ -1377,6 +1396,13 @@ function formatearFechaFactura(fechaIso) {
 
   const [year, month, day] = fechaIso.split('-');
   return `${day}/${month}/${year}`;
+}
+
+function formatearMontoFactura(valor) {
+  return Number(valor || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
 function escapeHtml(texto) {

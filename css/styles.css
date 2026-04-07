@@ -816,21 +816,22 @@ INICIO DEL MODAL FACTURA
 /* HEADER */
 .factura-header {
   display: grid;
-  grid-template-columns: 140px ifr;
+  grid-template-columns: 170px 1fr;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
   margin-bottom: 10px;
 }
 
 .factura-logo {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
 }
 
 .factura-logo img {
-  width: 250px;
-  max-height: 160px;
+  width: 160px;
+  max-width: 100%;
+  max-height: 140px;
   object-fit: contain;
 }
 
@@ -841,7 +842,7 @@ INICIO DEL MODAL FACTURA
 .factura-membrete h1 {
   font-family: 'Great Vibes', cursive;
   font-size: 46px;
-  line-height: 1;
+  line-height: 1.05;
   margin: 0 0 6px;
   font-weight: 400;
 }
@@ -931,19 +932,19 @@ INICIO DEL MODAL FACTURA
 
 .factura-total-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 110px;
+  justify-content: end;
   align-items: center;
-  column-gap: 14px;
+  column-gap: 8px;
   margin-bottom: 6px;
   font-size: 15px;
 }
 
-.factura-total-row span.first-child {
+.factura-total-row span:first-child {
   text-align: right;
 }
 
-.factura-total-row span.last-child {
-  min-width: 110px;
+.factura-total-row span:last-child {
   text-align: right;
 }
 
@@ -963,10 +964,12 @@ INICIO DEL MODAL FACTURA
 
 .factura-pagado {
   color: #1d4ed8;
+  font-weight: 600;
 }
 
 .factura-saldo {
   color: #d62828;
+  font-weight: 600;
 }
 
 .cancelado {
