@@ -362,6 +362,7 @@ function agregarFilaProducto() {
       data-row-id="${productoRowCounter}"
       data-producto-id=""
       data-imagen-url=""
+      data-imagen-local=""
       data-subtotal="0"
     >
       <h4 class="item-card-title">Producto ${productoRowCounter}</h4>
@@ -537,11 +538,16 @@ function manejarPreviewImagen(row) {
   const input = row.querySelector('.producto-imagen-file');
   const file = input.files?.[0];
 
-  if (!file) return;
+  if (!file) {
+    row.dataset.imagenLocal = '';
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = e => {
-    mostrarPreviewExistente(row, e.target.result);
+    const imageSrc = e.target?.result || '';
+    row.dataset.imagenLocal = imageSrc;
+    mostrarPreviewExistente(row, imageSrc);
   };
   reader.readAsDataURL(file);
 }
@@ -871,6 +877,7 @@ function obtenerProductosFormulario() {
       row,
       productoId: row.dataset.productoId || '',
       imagenUrl: row.dataset.imagenUrl || '',
+      imagenLocal: row.dataset.imagenLocal || '',
       nombre,
       cantidad,
       precioUnit,
@@ -1361,13 +1368,15 @@ function mostrarFactura(data, factura, clienteNombre) {
   imgContainer.innerHTML = '';
 
   data.productos
-    .filter(p => p.nombre && p.imagenUrl)
+    .filter(p => p.nombre && (p.imagenLocal || p.imagenUrl))
     .forEach(p => {
+      const srcImagen = p.imagenLocal || p.imagenUrl;
+
       const div = document.createElement('div');
       div.className = 'factura-img-card';
 
       div.innerHTML = `
-        <img src="${p.imagenUrl}" alt="${escapeHtml(p.nombre)}">
+        <img src="${srcImagen}" alt="${escapeHtml(p.nombre)}">
         <span>${escapeHtml(p.nombre)}</span>
       `;
 
