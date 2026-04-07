@@ -1262,6 +1262,8 @@ function mostrarFactura(data, factura, clienteNombre) {
 
   if (data.origenCodigo === 'CRO') {
     logoEl.src = 'assets/logos/logo_oligar_crochet.png';
+    logoEl.style.width = '150px';
+    logoEl.style.maxHeight = '140px';
     tituloEl.textContent = 'Oligar Crochet';
     infoEl.innerHTML = `
       Managua, Nicaragua | Celular: 7841 1119<br>
@@ -1269,6 +1271,8 @@ function mostrarFactura(data, factura, clienteNombre) {
     `;
   } else {
     logoEl.src = 'assets/logos/logo_oligar_creaciones.png';
+    logoEl.style.width = '190px';
+    logoEl.style.maxHeight = '140px';
     tituloEl.textContent = 'Oligar Creaciones';
     infoEl.innerHTML = `
       Managua, Nicaragua | Celular: 7841 1119<br>
