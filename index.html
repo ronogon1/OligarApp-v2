@@ -69,7 +69,7 @@
     <div id="mobileMenu" class="mobile-menu hidden">
       <button class="mobile-menu-btn" data-view="homeView" type="button">🏠 Inicio</button>
       <button class="mobile-menu-btn" data-view="ventaView" type="button">💵 Nueva venta</button>
-      <button class="mobile-menu-btn" type="button" disabled>📝 Facturas</button>
+      <button class="mobile-menu-btn" data-view="facturasView" type="button">📝 Facturas</button>
       <button class="mobile-menu-btn" type="button" disabled>👥 Clientes</button>
       <button class="mobile-menu-btn" type="button" disabled>📊 Reportes</button>
       <button class="mobile-menu-btn" type="button" disabled>🔎 Consultas</button>
@@ -222,6 +222,113 @@
           </div>
         </section>
       </section>
+
+      <!-- SECCIÓN FACTURA -->
+      <section id="facturasView" class="app-section">
+        <section class="module-card">
+          <div class="module-header module-header-flex">
+            <div>
+              <h2>Facturas</h2>
+              <p class="helper-text">
+                Consulta, visualiza y reimprime facturas registradas.
+              </p>
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Filtros de búsqueda</h3>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroFacturaCodigo">N° de factura</label>
+                <input
+                  type="text"
+                  id="filtroFacturaCodigo"
+                  placeholder="Ej. FAC-20260001"
+                >
+              </div>
+
+              <div class="field-group">
+                <label for="filtroFacturaCliente">Cliente</label>
+                <input
+                  type="text"
+                  id="filtroFacturaCliente"
+                  placeholder="Nombre del cliente"
+                >
+              </div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroFacturaFechaDesde">Fecha desde</label>
+                <input type="date" id="filtroFacturaFechaDesde">
+              </div>
+
+              <div class="field-group">
+                <label for="filtroFacturaFechaHasta">Fecha hasta</label>
+                <input type="date" id="filtroFacturaFechaHasta">
+              </div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroFacturaOrigen">Origen</label>
+                <select id="filtroFacturaOrigen">
+                  <option value="">Todos</option>
+                  <option value="CRO">Crochet</option>
+                  <option value="CRE">Creaciones</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label for="filtroFacturaEstado">Estado</label>
+                <select id="filtroFacturaEstado">
+                  <option value="">Todos</option>
+                  <option value="ACT">Activa</option>
+                  <option value="CAN">Cancelada</option>
+                  <option value="ANU">Anulada</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="module-actions">
+              <button type="button" id="btnBuscarFacturas" class="btn-primary-wide">
+                Buscar facturas
+              </button>
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Resultados</h3>
+
+            <div id="facturasEmptyState" class="helper-text">
+              Usa los filtros y pulsa “Buscar facturas”.
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table hidden" id="tablaFacturas">
+                <thead>
+                  <tr>
+                    <th>Factura</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Origen</th>
+                    <th>Total</th>
+                    <th>Pagado</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaFacturasBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </section>
+
+
+
     </main>
   </div>
 

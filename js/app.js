@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('descVenta').addEventListener('input', recalcularResumen);
   document.getElementById('clienteVenta').addEventListener('input', manejarBusquedaCliente);
 
+  document.getElementById('btnBuscarFacturas').addEventListener('click', buscarFacturas);
+
   configurarMenuMovil();
   configurarOrigenVenta();
   actualizarSeccionActiva('Inicio');
@@ -1701,6 +1703,242 @@ function mostrarFactura(data, factura, clienteNombre) {
 
 function cerrarFactura() {
   document.getElementById('facturaModal').classList.add('hidden');
+}
+
+/* ====================
+    CONSULTA DE FACTURAS
+==================== */
+
+async function buscarFacturas() {
+  try {
+    const codigo = normalizarTexto(
+      document.getElementById('filtroFacturaCodigo').value
+    );
+
+    const cliente = normalizarTexto(
+      document.getElementById('filtroFacturaCliente').value
+    );
+
+    const fechaDesde = document.getElementById('filtroFacturaFechaDesde').value;
+    const fechaHasta = document.getElementById('filtroFacturaFechaHasta').value;
+    const origen = document.getElementById('filtroFacturaOrigen').value;
+    const estado = document.getElementById('filtroFacturaEstado').value;
+
+    let query = supabaseClient
+      .from('vw_facturas_resumen')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (codigo) {
+      query = query.ilike('factura_codigo', `%${codigo}%`);
+    }
+
+    if (cliente) {
+      query = query.ilike('cliente_nombre', `%${cliente}%`);
+    }
+
+    if (fechaDesde) {
+      query = query.gte('fecha', fechaDesde);
+    }
+
+    if (fechaHasta) {
+      query = query.lte('fecha', fechaHasta);
+    }
+
+    if (origen) {
+      query = query.eq('origen_codigo', origen);
+    }
+
+    if (estado) {
+      query = query.eq('estado_codigo', estado);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    renderTablaFacturas(data || []);
+  } catch (error) {
+    console.error('Error buscando facturas:', error);
+    alert(error.message || 'Ocurrió un error al buscar facturas.');
+  }
+}
+
+function renderTablaFacturas(facturas) {
+  const table = document.getElementById('tablaFacturas');
+  const body = document.getElementById('tablaFacturasBody');
+  const empty = document.getElementById('facturasEmptyState');
+
+  body.innerHTML = '';
+
+  if (!facturas.length) {
+    table.classList.add('hidden');
+    empty.textContent = 'No se encontraron facturas con esos filtros.';
+    return;
+  }
+
+  empty.textContent = '';
+  table.classList.remove('hidden');
+
+  facturas.forEach(item => {
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${escapeHtml(item.factura_codigo || '')}</td>
+      <td>${escapeHtml(formatearFechaFactura(item.fecha || ''))}</td>
+      <td>${escapeHtml(item.cliente_nombre || '')}</td>
+      <td>${escapeHtml(item.origen_nombre || '')}</td>
+      <td>C$ ${formatearMontoFactura(item.total_factura || 0)}</td>
+      <td>C$ ${formatearMontoFactura(item.pagado || 0)}</td>
+      <td>C$ ${formatearMontoFactura(item.saldo_pendiente || 0)}</td>
+      <td>${escapeHtml(item.estado_nombre || '')}</td>
+      <td>
+        <button
+          type="button"
+          class="table-action-btn"
+          data-factura-id="${item.id}"
+        >
+          Ver / Reimprimir
+        </button>
+      </td>
+    `;
+
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('.table-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      abrirFacturaGuardada(btn.dataset.facturaId);
+    });
+  });
+}
+
+async function abrirFacturaGuardada(facturaId) {
+  try {
+    const factura = await obtenerFacturaCompleta(facturaId);
+    mostrarFacturaDesdeBD(factura);
+  } catch (error) {
+    console.error('Error abriendo factura:', error);
+    alert(error.message || 'No fue posible abrir la factura.');
+  }
+}
+
+async function obtenerFacturaCompleta(facturaId) {
+  const { data: factura, error: errorFactura } = await supabaseClient
+    .from('facturas')
+    .select(`
+      id,
+      factura_codigo,
+      fecha,
+      subtotal_factura,
+      envio,
+      desc_global,
+      total_factura,
+      pagado,
+      observaciones,
+      clientes (
+        id,
+        nombre
+      ),
+      origenes_factura (
+        codigo,
+        nombre
+      ),
+      estados_factura (
+        codigo,
+        nombre
+      )
+    `)
+    .eq('id', facturaId)
+    .single();
+
+  if (errorFactura) {
+    throw errorFactura;
+  }
+
+  const { data: detalles, error: errorDetalles } = await supabaseClient
+    .from('detalle_factura')
+    .select(`
+      id,
+      factura_id,
+      cantidad,
+      precio_unit,
+      desc_prod,
+      subtotal,
+      imagen_producto,
+      productos (
+        id,
+        nombre,
+        imagen_url
+      )
+    `)
+    .eq('factura_id', facturaId)
+    .order('created_at', { ascending: true });
+
+  if (errorDetalles) {
+    throw errorDetalles;
+  }
+
+  const { data: pagos, error: errorPagos } = await supabaseClient
+    .from('pagos_factura')
+    .select(`
+      id,
+      fecha,
+      monto,
+      nota,
+      metodos_pago (
+        codigo,
+        nombre
+      )
+    `)
+    .eq('factura_id', facturaId)
+    .order('fecha', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (errorPagos) {
+    throw errorPagos;
+  }
+
+  return {
+    factura,
+    detalles: detalles || [],
+    pagos: pagos || []
+  };
+}
+
+function mostrarFacturaDesdeBD(payload) {
+  const factura = payload.factura;
+  const detalles = payload.detalles || [];
+
+  const data = {
+    origenCodigo: factura.origenes_factura?.codigo || '',
+    fechaVenta: factura.fecha || '',
+    clienteNombre: factura.clientes?.nombre || '',
+    subtotalFactura: Number(factura.subtotal_factura || 0),
+    envio: Number(factura.envio || 0),
+    descGlobal: Number(factura.desc_global || 0),
+    totalFactura: Number(factura.total_factura || 0),
+    pagado: Number(factura.pagado || 0),
+    saldoPendiente: Number(factura.total_factura || 0) - Number(factura.pagado || 0),
+    productos: detalles.map(item => ({
+      nombre: item.productos?.nombre || '',
+      cantidad: Number(item.cantidad || 0),
+      precioUnit: Number(item.precio_unit || 0),
+      descuento: Number(item.desc_prod || 0),
+      subtotal: Number(item.subtotal || 0),
+      imagenUrl: item.imagen_producto || item.productos?.imagen_url || ''
+    }))
+  };
+
+  mostrarFactura(
+    data,
+    { factura_codigo: factura.factura_codigo },
+    factura.clientes?.nombre || ''
+  );
 }
 
 

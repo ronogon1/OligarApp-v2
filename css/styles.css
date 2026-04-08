@@ -1041,3 +1041,55 @@ INICIO DEL MODAL FACTURA
 /* 
 FIN DE MODAL FACTURA 
 */
+
+
+
+/* 
+INICIO DE CONFIGURACIÓN PARA LA TABLA DE VISTA DE FACTURAS 
+*/
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e7ddd6;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table th {
+  background: #f5f1ed;
+  font-weight: 600;
+}
+
+.data-table tbody tr:hover {
+  background: #fcfaf8;
+}
+
+.table-action-btn {
+  border: 1px solid #8b5cf6;
+  background: white;
+  color: #6d28d9;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.table-action-btn:hover {
+  background: #f4efff;
+}
+
+/* 
+FIN DE LA CONFIGURACIÓN DE VISTA DE TABLA DE FACTURAS
+*/
