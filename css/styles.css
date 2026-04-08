@@ -1029,27 +1029,31 @@ INICIO DEL MODAL FACTURA
     padding: 0 !important;
     background: #fff !important;
     overflow: visible !important;
+    height: auto !important;
   }
 
-  body * {
-    visibility: hidden !important;
-  }
-
-  #facturaModal,
-  #facturaModal * {
-    visibility: visible !important;
+  /* Quitar del flujo toda la app */
+  body > *:not(#facturaModal) {
+    display: none !important;
   }
 
   #facturaModal {
+    display: block !important;
     position: static !important;
     inset: auto !important;
-    background: #fff !important;
-    display: block !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  #facturaModal.hidden {
+    display: block !important;
   }
 
   .factura-content {
+    display: block !important;
     position: static !important;
     width: 100% !important;
     max-width: none !important;
@@ -1079,6 +1083,7 @@ INICIO DEL MODAL FACTURA
 
   .factura-info {
     white-space: nowrap !important;
+    line-height: 1.25 !important;
   }
 
   .factura-imagenes {
