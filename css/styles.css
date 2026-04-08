@@ -1041,8 +1041,8 @@ INICIO DEL MODAL FACTURA
   }
 
   #facturaModal {
-    position: fixed !important;
-    inset: 0 !important;
+    position: static !important;
+    inset: auto !important;
     background: #fff !important;
     display: block !important;
     margin: 0 !important;
@@ -1050,11 +1050,8 @@ INICIO DEL MODAL FACTURA
   }
 
   .factura-content {
-    position: absolute !important;
-    top: 10mm !important;
-    left: 10mm !important;
-    right: 10mm !important;
-    width: auto !important;
+    position: static !important;
+    width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
