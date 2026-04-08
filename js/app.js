@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   );
 
   document.getElementById('btnLogin').addEventListener('click', login);
-  document.getElementById('btnLogout').addEventListener('click', logout);
+  document.getElementById('btnLogout').addEventListener('click', manejarBotonPrincipalTopbar);
   document.getElementById('btnMenuToggle').addEventListener('click', toggleMobileMenu);
   document.getElementById('btnAddProducto').addEventListener('click', () => {
     agregarFilaProducto();
@@ -162,6 +162,8 @@ function actualizarSeccionActiva(nombre) {
   if (label) {
     label.textContent = nombre;
   }
+
+  actualizarBotonPrincipalTopbar();
 }
 
 function toggleMobileMenu() {
@@ -221,6 +223,28 @@ async function logout() {
   mostrarLogin();
 }
 
+function irAInicio() {
+  document.querySelectorAll('.app-section').forEach(section => {
+    section.classList.remove('active-section');
+  });
+
+  document.getElementById('homeView').classList.add('active-section');
+  actualizarSeccionActiva('Inicio');
+  cerrarMenuMovil();
+}
+
+async function manejarBotonPrincipalTopbar() {
+  const homeActiva = document
+    .getElementById('homeView')
+    ?.classList.contains('active-section');
+
+  if (homeActiva) {
+    await logout();
+  } else {
+    irAInicio();
+  }
+}
+
 function mostrarApp(user) {
   document.getElementById('loginView').classList.remove('active');
   document.getElementById('loginView').classList.add('hidden');
@@ -230,6 +254,13 @@ function mostrarApp(user) {
 
   const nombreUsuario = user.email ? user.email.split('@')[0] : 'Usuario';
   document.getElementById('userEmail').textContent = nombreUsuario;
+
+  document.querySelectorAll('.app-section').forEach(section => {
+    section.classList.remove('active-section');
+  });
+
+  document.getElementById('homeView').classList.add('active-section');
+  actualizarSeccionActiva('Inicio');
 }
 
 function mostrarLogin() {
@@ -242,6 +273,11 @@ function mostrarLogin() {
   document.getElementById('userEmail').textContent = '';
   document.getElementById('password').value = '';
   cerrarMenuMovil();
+
+  const btn = document.getElementById('btnLogout');
+  if (btn) {
+    btn.textContent = 'Salir';
+  }
 }
 
 /* =========================
@@ -2389,3 +2425,13 @@ function validarArchivoImagen(file) {
   };
 }
 
+function actualizarBotonPrincipalTopbar() {
+  const btn = document.getElementById('btnLogout');
+  if (!btn) return;
+
+  const homeActiva = document
+    .getElementById('homeView')
+    ?.classList.contains('active-section');
+
+  btn.textContent = homeActiva ? 'Salir' : 'Inicio';
+}
