@@ -45,6 +45,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btnBuscarFacturas').addEventListener('click', buscarFacturas);
 
+  document.getElementById('btnBuscarClientes').addEventListener('click', buscarClientesGestion);
+  document.getElementById('btnGuardarCliente').addEventListener('click', guardarClienteGestion);
+  document.getElementById('btnLimpiarCliente').addEventListener('click', limpiarFormularioCliente);
+  document.getElementById('btnToggleEstadoCliente').addEventListener('click', toggleEstadoCliente);
+
   configurarMenuMovil();
   configurarOrigenVenta();
   actualizarSeccionActiva('Inicio');
@@ -271,6 +276,7 @@ async function buscarClientes(term) {
     const { data, error } = await supabaseClient
       .from('clientes')
       .select('id, cliente_codigo, nombre')
+      .eq('activo', true)
       .ilike('nombre', `%${term}%`)
       .limit(8);
 
@@ -1565,7 +1571,7 @@ async function guardarVentaDesdeFormulario() {
 
 
 /* =========================
-   FACTURA
+   GESTIÓN FACTURAS
 ========================= */
 
 function mostrarFactura(data, factura, clienteNombre) {
@@ -1939,6 +1945,308 @@ function mostrarFacturaDesdeBD(payload) {
     { factura_codigo: factura.factura_codigo },
     factura.clientes?.nombre || ''
   );
+}
+
+/* =========================
+   GESTIÓN CLIENTES
+========================= */
+
+function limpiarFormularioCliente() {
+  document.getElementById('clienteId').value = '';
+  document.getElementById('clienteCodigoForm').value = '';
+  document.getElementById('clienteNombreForm').value = '';
+  document.getElementById('clienteTelefonoForm').value = '';
+  document.getElementById('clienteDireccion1Form').value = '';
+  document.getElementById('clienteDireccion2Form').value = '';
+  document.getElementById('clienteDireccion3Form').value = '';
+  document.getElementById('clienteNotaForm').value = '';
+  document.getElementById('clienteActivoForm').checked = true;
+
+  document.getElementById('clienteFormTitulo').textContent = 'Nuevo cliente';
+
+  const btnToggle = document.getElementById('btnToggleEstadoCliente');
+  btnToggle.classList.add('hidden');
+  btnToggle.textContent = 'Cambiar a inactivo';
+}
+
+function obtenerDatosFormularioCliente() {
+  return {
+    id: document.getElementById('clienteId').value.trim(),
+    cliente_codigo: document.getElementById('clienteCodigoForm').value.trim(),
+    nombre: normalizarTexto(document.getElementById('clienteNombreForm').value),
+    telefono: normalizarTexto(document.getElementById('clienteTelefonoForm').value),
+    direccion_envio1: normalizarTexto(document.getElementById('clienteDireccion1Form').value),
+    direccion_envio2: normalizarTexto(document.getElementById('clienteDireccion2Form').value),
+    direccion_envio3: normalizarTexto(document.getElementById('clienteDireccion3Form').value),
+    nota: normalizarTexto(document.getElementById('clienteNotaForm').value),
+    activo: document.getElementById('clienteActivoForm').checked
+  };
+}
+
+function validarFormularioCliente(data) {
+  const errores = [];
+
+  if (!data.nombre) {
+    errores.push('Debes ingresar el nombre del cliente.');
+  }
+
+  return errores;
+}
+
+async function buscarClientesGestion() {
+  try {
+    const texto = normalizarTexto(
+      document.getElementById('filtroClienteTexto').value
+    );
+
+    const telefono = normalizarTexto(
+      document.getElementById('filtroClienteTelefono').value
+    );
+
+    const estado = document.getElementById('filtroClienteEstado').value;
+
+    let query = supabaseClient
+      .from('clientes')
+      .select(`
+        id,
+        cliente_codigo,
+        nombre,
+        telefono,
+        direccion_envio1,
+        direccion_envio2,
+        direccion_envio3,
+        nota,
+        activo,
+        created_at
+      `)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (texto) {
+      query = query.or(
+        `cliente_codigo.ilike.%${texto}%,nombre.ilike.%${texto}%`
+      );
+    }
+
+    if (telefono) {
+      query = query.ilike('telefono', `%${telefono}%`);
+    }
+
+    if (estado === 'activos') {
+      query = query.eq('activo', true);
+    } else if (estado === 'inactivos') {
+      query = query.eq('activo', false);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    renderTablaClientes(data || []);
+  } catch (error) {
+    console.error('Error buscando clientes:', error);
+    alert(error.message || 'Ocurrió un error al buscar clientes.');
+  }
+}
+
+function renderTablaClientes(clientes) {
+  const table = document.getElementById('tablaClientes');
+  const body = document.getElementById('tablaClientesBody');
+  const empty = document.getElementById('clientesEmptyState');
+
+  body.innerHTML = '';
+
+  if (!clientes.length) {
+    table.classList.add('hidden');
+    empty.textContent = 'No se encontraron clientes con esos filtros.';
+    return;
+  }
+
+  empty.textContent = '';
+  table.classList.remove('hidden');
+
+  clientes.forEach(item => {
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${escapeHtml(item.cliente_codigo || '')}</td>
+      <td>${escapeHtml(item.nombre || '')}</td>
+      <td>${escapeHtml(item.telefono || '')}</td>
+      <td>${escapeHtml(item.direccion_envio1 || '')}</td>
+      <td>${item.activo ? 'Activo' : 'Inactivo'}</td>
+      <td>
+        <button
+          type="button"
+          class="table-action-btn"
+          data-cliente-id="${item.id}"
+        >
+          Editar
+        </button>
+      </td>
+    `;
+
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('.table-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cargarClienteEnFormulario(btn.dataset.clienteId);
+    });
+  });
+}
+
+async function cargarClienteEnFormulario(clienteId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('clientes')
+      .select(`
+        id,
+        cliente_codigo,
+        nombre,
+        telefono,
+        direccion_envio1,
+        direccion_envio2,
+        direccion_envio3,
+        nota,
+        activo
+      `)
+      .eq('id', clienteId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    document.getElementById('clienteId').value = data.id || '';
+    document.getElementById('clienteCodigoForm').value = data.cliente_codigo || '';
+    document.getElementById('clienteNombreForm').value = data.nombre || '';
+    document.getElementById('clienteTelefonoForm').value = data.telefono || '';
+    document.getElementById('clienteDireccion1Form').value = data.direccion_envio1 || '';
+    document.getElementById('clienteDireccion2Form').value = data.direccion_envio2 || '';
+    document.getElementById('clienteDireccion3Form').value = data.direccion_envio3 || '';
+    document.getElementById('clienteNotaForm').value = data.nota || '';
+    document.getElementById('clienteActivoForm').checked = !!data.activo;
+
+    document.getElementById('clienteFormTitulo').textContent = 'Editar cliente';
+
+    const btnToggle = document.getElementById('btnToggleEstadoCliente');
+    btnToggle.classList.remove('hidden');
+    btnToggle.textContent = data.activo
+      ? 'Cambiar a inactivo'
+      : 'Cambiar a activo';
+  } catch (error) {
+    console.error('Error cargando cliente:', error);
+    alert(error.message || 'No fue posible cargar el cliente.');
+  }
+}
+
+async function guardarClienteGestion() {
+  try {
+    const data = obtenerDatosFormularioCliente();
+    const errores = validarFormularioCliente(data);
+
+    if (errores.length) {
+      alert(errores.join('\n'));
+      return;
+    }
+
+    if (data.id) {
+      const { error } = await supabaseClient
+        .from('clientes')
+        .update({
+          nombre: data.nombre,
+          telefono: data.telefono || null,
+          direccion_envio1: data.direccion_envio1 || null,
+          direccion_envio2: data.direccion_envio2 || null,
+          direccion_envio3: data.direccion_envio3 || null,
+          nota: data.nota || null,
+          activo: data.activo
+        })
+        .eq('id', data.id);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('Cliente actualizado correctamente.');
+    } else {
+      const clienteCodigo = await generarCodigoCliente();
+
+      const { error } = await supabaseClient
+        .from('clientes')
+        .insert([
+          {
+            cliente_codigo: clienteCodigo,
+            nombre: data.nombre,
+            telefono: data.telefono || null,
+            direccion_envio1: data.direccion_envio1 || null,
+            direccion_envio2: data.direccion_envio2 || null,
+            direccion_envio3: data.direccion_envio3 || null,
+            nota: data.nota || null,
+            activo: true
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('Cliente creado correctamente.');
+    }
+
+    limpiarFormularioCliente();
+    await buscarClientesGestion();
+  } catch (error) {
+    console.error('Error guardando cliente:', error);
+    alert(error.message || 'Ocurrió un error al guardar el cliente.');
+  }
+}
+
+async function toggleEstadoCliente() {
+  try {
+    const clienteId = document.getElementById('clienteId').value.trim();
+
+    if (!clienteId) {
+      alert('Primero debes seleccionar un cliente.');
+      return;
+    }
+
+    const activoActual = document.getElementById('clienteActivoForm').checked;
+    const nuevoEstado = !activoActual;
+
+    const mensaje = nuevoEstado
+      ? '¿Deseas activar este cliente?'
+      : '¿Deseas inactivar este cliente?';
+
+    const ok = confirm(mensaje);
+    if (!ok) return;
+
+    const { error } = await supabaseClient
+      .from('clientes')
+      .update({
+        activo: nuevoEstado
+      })
+      .eq('id', clienteId);
+
+    if (error) {
+      throw error;
+    }
+
+    document.getElementById('clienteActivoForm').checked = nuevoEstado;
+
+    const btnToggle = document.getElementById('btnToggleEstadoCliente');
+    btnToggle.textContent = nuevoEstado
+      ? 'Cambiar a inactivo'
+      : 'Cambiar a activo';
+
+    alert(`Cliente ${nuevoEstado ? 'activado' : 'inactivado'} correctamente.`);
+    await buscarClientesGestion();
+  } catch (error) {
+    console.error('Error cambiando estado del cliente:', error);
+    alert(error.message || 'No fue posible cambiar el estado del cliente.');
+  }
 }
 
 

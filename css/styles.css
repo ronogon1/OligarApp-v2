@@ -1176,3 +1176,56 @@ INICIO DE CONFIGURACIÓN PARA LA TABLA DE VISTA DE FACTURAS
 /* 
 FIN DE LA CONFIGURACIÓN DE VISTA DE TABLA DE FACTURAS
 */
+
+
+/* 
+FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
+*/
+
+.field-group textarea,
+.field-group-inline textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #d8c9bf;
+  border-radius: 16px;
+  background: #fff;
+  color: #6b4a3a;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field-group textarea:focus,
+.field-group-inline textarea:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+.checkbox-field-group {
+  display: flex;
+  align-items: end;
+}
+
+.checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  font-size: 15px;
+  color: #6b4a3a;
+}
+
+.checkbox-inline input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.field-group-empty {
+  visibility: hidden;
+}
+
+/* 
+FIN DE FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
+*/

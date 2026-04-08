@@ -70,7 +70,8 @@
       <button class="mobile-menu-btn" data-view="homeView" type="button">🏠 Inicio</button>
       <button class="mobile-menu-btn" data-view="ventaView" type="button">💵 Nueva venta</button>
       <button class="mobile-menu-btn" data-view="facturasView" type="button">📝 Facturas</button>
-      <button class="mobile-menu-btn" type="button" disabled>👥 Clientes</button>
+      <button class="mobile-menu-btn" data-view="clientesView" type="button">👥 Clientes</button>
+      <button class="mobile-menu-btn" type="button" disabled>🛍️ Productos</button>
       <button class="mobile-menu-btn" type="button" disabled>📊 Reportes</button>
       <button class="mobile-menu-btn" type="button" disabled>🔎 Consultas</button>
     </div>
@@ -327,6 +328,189 @@
         </section>
       </section>
 
+      <!-- SECCIÓN CLIENTES -->
+      <section id="clientesView" class="app-section">
+        <section class="module-card">
+          <div class="module-header module-header-flex">
+            <div>
+              <h2>Clientes</h2>
+              <p class="helper-text">
+                Consulta, registra y actualiza la información de clientes.
+              </p>
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Búsqueda</h3>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroClienteTexto">Código o nombre</label>
+                <input
+                  type="text"
+                  id="filtroClienteTexto"
+                  placeholder="Código o nombre del cliente"
+                >
+              </div>
+
+              <div class="field-group">
+                <label for="filtroClienteTelefono">Teléfono</label>
+                <input
+                  type="text"
+                  id="filtroClienteTelefono"
+                  placeholder="Teléfono"
+                >
+              </div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroClienteEstado">Estado</label>
+                <select id="filtroClienteEstado">
+                  <option value="activos">Activos</option>
+                  <option value="inactivos">Inactivos</option>
+                  <option value="todos">Todos</option>
+                </select>
+              </div>
+
+              <div class="field-group field-group-empty"></div>
+            </div>
+
+            <div class="module-actions">
+              <button type="button" id="btnBuscarClientes" class="btn-primary-wide">
+                Buscar clientes
+              </button>
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Resultados</h3>
+
+            <div id="clientesEmptyState" class="helper-text">
+              Usa los filtros y pulsa “Buscar clientes”.
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table hidden" id="tablaClientes">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Dirección 1</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaClientesBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <div class="module-header module-header-flex">
+              <div>
+                <h3 id="clienteFormTitulo">Nuevo cliente</h3>
+              </div>
+
+              <button type="button" id="btnLimpiarCliente" class="btn-clear-form">
+                Limpiar formulario
+              </button>
+            </div>
+
+            <input type="hidden" id="clienteId">
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="clienteCodigoForm">Código</label>
+                <input
+                  type="text"
+                  id="clienteCodigoForm"
+                  readonly
+                  placeholder="Se genera automáticamente"
+                >
+              </div>
+
+              <div class="field-group">
+                <label for="clienteNombreForm">Nombre</label>
+                <input
+                  type="text"
+                  id="clienteNombreForm"
+                  placeholder="Nombre del cliente"
+                >
+              </div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="clienteTelefonoForm">Teléfono</label>
+                <input
+                  type="text"
+                  id="clienteTelefonoForm"
+                  placeholder="Teléfono"
+                >
+              </div>
+
+              <div class="field-group checkbox-field-group">
+                <label class="checkbox-inline">
+                  <input type="checkbox" id="clienteActivoForm" checked>
+                  <span>Cliente activo</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="clienteDireccion1Form">Dirección de entrega 1</label>
+              <input
+                type="text"
+                id="clienteDireccion1Form"
+                placeholder="Dirección principal"
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="clienteDireccion2Form">Dirección de entrega 2</label>
+              <input
+                type="text"
+                id="clienteDireccion2Form"
+                placeholder="Dirección adicional"
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="clienteDireccion3Form">Dirección de entrega 3</label>
+              <input
+                type="text"
+                id="clienteDireccion3Form"
+                placeholder="Dirección adicional"
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="clienteNotaForm">Nota / observaciones</label>
+              <textarea
+                id="clienteNotaForm"
+                rows="4"
+                placeholder="Observaciones del cliente"
+              ></textarea>
+            </div>
+
+            <div class="module-actions">
+              <button type="button" id="btnGuardarCliente" class="btn-primary-wide">
+                Guardar cliente
+              </button>
+              <button type="button" id="btnToggleEstadoCliente" class="btn-secondary-soft hidden">
+                Cambiar a inactivo
+              </button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- SECCIÓN PRODUCTOS-->
+
+
+      <!-- SECCIÓN REPORTES -->
 
 
     </main>
