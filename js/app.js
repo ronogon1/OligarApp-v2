@@ -290,8 +290,7 @@ function mostrarLogin() {
   }
 }
 
-/* =========================
-   CLIENTES
+/* CLIENTES
 ========================= */
 
 let clienteSearchTimeout = null;
@@ -408,8 +407,7 @@ async function crearClienteNuevo(clienteNombre) {
   throw new Error('No fue posible generar un código único para el cliente.');
 }
 
-/* =========================
-   PRODUCTOS
+/* PRODUCTOS
 ========================= */
 
 function agregarFilaProducto() {
@@ -1020,8 +1018,7 @@ async function sincronizarImagenProducto(itemProducto, producto) {
 }
 
 
-/* =========================
-   PAGOS
+/* PAGOS
 ========================= */
 
 function agregarFilaPago() {
@@ -1119,8 +1116,8 @@ function generarCodigoPagoDesdeBase(base, index) {
   return formatearCodigo('PAG-', base + index, 6);
 }
 
-/* =========================
-   RESUMEN
+
+/* RESUMEN
 ========================= */
 
 function recalcularResumen() {
@@ -1159,8 +1156,8 @@ function calcularTotalPagos() {
   return redondear2(total);
 }
 
-/* =========================
-   GUARDAR VENTA
+
+/* GUARDAR VENTA
 ========================= */
 
 function redondear2(valor) {
@@ -1664,8 +1661,7 @@ async function guardarVentaDesdeFormulario() {
 }
 
 
-/* =========================
-   GESTIÓN FACTURAS
+/* GESTIÓN FACTURAS
 ========================= */
 
 function mostrarFactura(data, factura, clienteNombre) {
@@ -1805,8 +1801,8 @@ function cerrarFactura() {
   document.getElementById('facturaModal').classList.add('hidden');
 }
 
-/* ====================
-    CONSULTA DE FACTURAS
+
+/* CONSULTA DE FACTURAS
 ==================== */
 
 async function buscarFacturas() {
@@ -2041,8 +2037,8 @@ function mostrarFacturaDesdeBD(payload) {
   );
 }
 
-/* =========================
-   GESTIÓN CLIENTES
+
+/* GESTIÓN CLIENTES
 ========================= */
 
 function limpiarFormularioCliente() {
@@ -2298,6 +2294,7 @@ async function guardarClienteGestion() {
   }
 }
 
+/*
 async function toggleEstadoCliente() {
   try {
     const clienteId = document.getElementById('clienteId').value.trim();
@@ -2342,9 +2339,10 @@ async function toggleEstadoCliente() {
     alert(error.message || 'No fue posible cambiar el estado del cliente.');
   }
 }
+*/
 
-/* =========================
-   GESTIÓN DE PRODUCTOS
+
+/* GESTIÓN DE PRODUCTOS
 ========================= */
 
 let productoImagenLocalGestion = '';
@@ -2766,8 +2764,7 @@ async function guardarProductoGestion() {
 }
 
 
-/* =========================
-   UTILIDADES
+/* UTILIDADES
 ========================= */
 
 function formatearMoneda(valor) {
