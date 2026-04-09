@@ -2314,10 +2314,6 @@ function limpiarFormularioProducto() {
 
   document.getElementById('productoFormTitulo').textContent = 'Nuevo producto';
 
-  const btnToggle = document.getElementById('btnToggleEstadoProducto');
-  btnToggle.classList.add('hidden');
-  btnToggle.textContent = 'Cambiar a inactivo';
-
   actualizarPreviewProductoGestion('');
 }
 
@@ -2590,12 +2586,6 @@ async function cargarProductoEnFormulario(productoId) {
     productoEliminarImagenGestion = false;
 
     document.getElementById('productoFormTitulo').textContent = 'Editar producto';
-
-    const btnToggle = document.getElementById('btnToggleEstadoProducto');
-    btnToggle.classList.remove('hidden');
-    btnToggle.textContent = data.activo
-      ? 'Cambiar a inactivo'
-      : 'Cambiar a activo';
 
     actualizarPreviewProductoGestion(data.imagen_url || '');
   } catch (error) {
