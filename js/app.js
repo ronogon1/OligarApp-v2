@@ -2433,5 +2433,9 @@ function actualizarBotonPrincipalTopbar() {
     .getElementById('homeView')
     ?.classList.contains('active-section');
 
-  btn.textContent = homeActiva ? 'Salir' : 'Inicio';
+  if (homeActiva) {
+    btn.textContent = '🚪 Salir';
+  } else {
+    btn.textContent = '🏠 Inicio';
+  }
 }
