@@ -2382,12 +2382,18 @@ function actualizarPreviewProductoGestion(src) {
     img.src = src;
     wrap.classList.remove('hidden');
     empty.classList.add('hidden');
-    btnQuitar.classList.remove('hidden');
+
+    if (btnQuitar) {
+      btnQuitar.classList.remove('hidden');
+    }
   } else {
     img.src = '';
     wrap.classList.add('hidden');
     empty.classList.remove('hidden');
-    btnQuitar.classList.add('hidden');
+
+    if (btnQuitar) {
+      btnQuitar.classList.add('hidden');
+    }
   }
 }
 
