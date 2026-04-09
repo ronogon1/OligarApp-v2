@@ -74,7 +74,6 @@ img {
   border-radius: 12px;
 }
 
-.btn-primary-wide,
 .btn-confirm,
 .table-action-btn {
   font: inherit;
@@ -478,7 +477,6 @@ img {
   justify-content: center;
 }
 
-.btn-primary-wide,
 .btn-confirm {
   min-width: 280px;
   border: none;
@@ -578,7 +576,6 @@ img {
     padding: 22px 16px;
   }
 
-  .btn-primary-wide,
   .btn-confirm {
     width: 100%;
     min-width: unset;

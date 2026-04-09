@@ -1191,6 +1191,7 @@ async function generarCodigoFactura() {
   return formatearCodigo(prefijo, siguiente, 4);
 }
 
+/*
 function generarCodigoPago(index) {
   const ahora = new Date();
   const fecha = [
@@ -1209,6 +1210,7 @@ function generarCodigoPago(index) {
   const random = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `PAG-${fecha}-${hora}-${sufijo}-${random}`;
 }
+  */
 
 async function cargarCatalogosVenta() {
   if (
@@ -2397,9 +2399,11 @@ function actualizarPreviewProductoGestion(src) {
   }
 }
 
+/*
 function validarArchivoImagenProductoGestion(file) {
   return validarArchivoImagen(file);
 }
+*/
 
 function manejarPreviewImagenProductoGestion() {
   const input = document.getElementById('productoImagenForm');
@@ -2418,7 +2422,7 @@ function manejarPreviewImagenProductoGestion() {
     nombreSpan.textContent = file.name;
   }
 
-  const validacion = validarArchivoImagenProductoGestion(file);
+  const validacion = validarArchivoImagen(file);
 
   if (!validacion.ok) {
     alert(validacion.mensaje);
@@ -2694,7 +2698,7 @@ async function guardarProductoGestion() {
       }
 
       if (file) {
-        const validacion = validarArchivoImagenProductoGestion(file);
+        const validacion = validarArchivoImagen(file);
         if (!validacion.ok) {
           alert(validacion.mensaje);
           return;
@@ -2724,7 +2728,7 @@ async function guardarProductoGestion() {
       let imagenFinal = null;
 
       if (file) {
-        const validacion = validarArchivoImagenProductoGestion(file);
+        const validacion = validarArchivoImagen(file);
         if (!validacion.ok) {
           alert(validacion.mensaje);
           return;
