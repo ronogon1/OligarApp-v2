@@ -1287,3 +1287,21 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 .hidden {
   display: none !important;
 }
+
+/* Estilo para el botón de selección de imagen */
+
+.file-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.file-name {
+  font-size: 13px;
+  color: #8a7a6f;
+}

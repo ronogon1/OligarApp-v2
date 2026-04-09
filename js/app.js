@@ -53,9 +53,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnBuscarProductos').addEventListener('click', buscarProductosGestion);
   document.getElementById('btnGuardarProducto').addEventListener('click', guardarProductoGestion);
   document.getElementById('btnLimpiarProducto').addEventListener('click', limpiarFormularioProducto);
-  document.getElementById('btnToggleEstadoProducto').addEventListener('click', toggleEstadoProducto);
   document.getElementById('productoImagenForm').addEventListener('change', manejarPreviewImagenProductoGestion);
   document.getElementById('btnQuitarImagenProductoForm').addEventListener('click', quitarImagenProductoGestion);
+
+  document.getElementById('btnSeleccionarImagenProducto').addEventListener('click', () => {
+    document.getElementById('productoImagenForm').click();
+  });
 
   configurarMenuMovil();
   configurarOrigenVenta();
@@ -2314,6 +2317,11 @@ function limpiarFormularioProducto() {
 
   document.getElementById('productoFormTitulo').textContent = 'Nuevo producto';
 
+  const nombreArchivo = document.getElementById('nombreArchivoProducto');
+  if (nombreArchivo) {
+    nombreArchivo.textContent = 'No se ha seleccionado imagen';
+  }
+
   actualizarPreviewProductoGestion('');
 }
 
@@ -2345,10 +2353,18 @@ function validarArchivoImagenProductoGestion(file) {
 function manejarPreviewImagenProductoGestion() {
   const input = document.getElementById('productoImagenForm');
   const file = input.files?.[0];
+  const nombreSpan = document.getElementById('nombreArchivoProducto');
 
   if (!file) {
     productoImagenLocalGestion = '';
+    if (nombreSpan) {
+      nombreSpan.textContent = 'No se ha seleccionado imagen';
+    }
     return;
+  }
+
+  if (nombreSpan) {
+    nombreSpan.textContent = file.name;
   }
 
   const validacion = validarArchivoImagenProductoGestion(file);
@@ -2359,6 +2375,10 @@ function manejarPreviewImagenProductoGestion() {
 
     const imagenActual = document.getElementById('productoImagenUrlForm').value;
     productoImagenLocalGestion = '';
+
+    if (nombreSpan) {
+      nombreSpan.textContent = 'No se ha seleccionado imagen';
+    }
 
     if (imagenActual && !productoEliminarImagenGestion) {
       actualizarPreviewProductoGestion(imagenActual);
@@ -2379,6 +2399,9 @@ function manejarPreviewImagenProductoGestion() {
 
     if (!ok) {
       input.value = '';
+      if (nombreSpan) {
+        nombreSpan.textContent = 'No se ha seleccionado imagen';
+      }
       return;
     }
   }
@@ -2412,6 +2435,11 @@ function quitarImagenProductoGestion() {
   document.getElementById('productoImagenForm').value = '';
   productoImagenLocalGestion = '';
   productoEliminarImagenGestion = Boolean(productoId && imagenActual);
+
+  const nombreArchivo = document.getElementById('nombreArchivoProducto');
+  if (nombreArchivo) {
+    nombreArchivo.textContent = 'No se ha seleccionado imagen';
+  }
 
   actualizarPreviewProductoGestion('');
 }
@@ -2679,51 +2707,6 @@ async function guardarProductoGestion() {
   } catch (error) {
     console.error('Error guardando producto:', error);
     alert(error.message || 'Ocurrió un error al guardar el producto.');
-  }
-}
-
-async function toggleEstadoProducto() {
-  try {
-    const productoId = document.getElementById('productoIdForm').value.trim();
-
-    if (!productoId) {
-      alert('Primero debes seleccionar un producto.');
-      return;
-    }
-
-    const activoActual = document.getElementById('productoActivoForm').checked;
-    const nuevoEstado = !activoActual;
-
-    const mensaje = nuevoEstado
-      ? '¿Deseas activar este producto?'
-      : '¿Deseas inactivar este producto?';
-
-    const ok = confirm(mensaje);
-    if (!ok) return;
-
-    const { error } = await supabaseClient
-      .from('productos')
-      .update({
-        activo: nuevoEstado
-      })
-      .eq('id', productoId);
-
-    if (error) {
-      throw error;
-    }
-
-    document.getElementById('productoActivoForm').checked = nuevoEstado;
-
-    const btnToggle = document.getElementById('btnToggleEstadoProducto');
-    btnToggle.textContent = nuevoEstado
-      ? 'Cambiar a inactivo'
-      : 'Cambiar a activo';
-
-    alert(`Producto ${nuevoEstado ? 'activado' : 'inactivado'} correctamente.`);
-    await buscarProductosGestion();
-  } catch (error) {
-    console.error('Error cambiando estado del producto:', error);
-    alert(error.message || 'No fue posible cambiar el estado del producto.');
   }
 }
 

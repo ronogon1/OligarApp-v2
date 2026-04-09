@@ -641,11 +641,26 @@
 
             <div class="field-group">
               <label for="productoImagenForm">Imagen</label>
-              <input
-                type="file"
-                id="productoImagenForm"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-              >
+              <div class="file-upload-wrapper">
+                <input
+                  type="file"
+                  id="productoImagenForm"
+                  class="file-input-hidden"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                >
+
+                <button
+                  type="button"
+                  id="btnSeleccionarImagenProducto"
+                  class="btn-secondary-soft"
+                >
+                  📷 Seleccionar imagen
+                </button>
+
+                <span id="nombreArchivoProducto" class="file-name">
+                  No se ha seleccionado imagen
+                </span>
+              </div>
             </div>
 
             <div class="module-subcard product-image-subcard">
