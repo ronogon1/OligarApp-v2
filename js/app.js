@@ -465,7 +465,23 @@ function agregarFilaProducto() {
       <div class="item-grid">
         <div class="field-group-inline">
           <label>Imagen</label>
-          <input type="file" class="producto-imagen-file" accept="image/*">
+
+          <div class="file-upload-wrapper">
+            <input
+              type="file"
+              class="producto-imagen-file file-input-hidden"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+            >
+
+            <button type="button" class="btn-secondary-soft btn-seleccionar-imagen">
+              📷 Seleccionar imagen
+            </button>
+
+            <span class="file-name nombre-archivo-producto">
+              No se ha seleccionado imagen
+            </span>
+          </div>
+
           <button type="button" class="btn-remove-image hidden">
             Quitar imagen
           </button>
@@ -495,37 +511,56 @@ function agregarFilaProducto() {
 function configurarFilaProducto(row) {
   const btnRemove = row.querySelector('.btn-remove');
   const btnRemoveImage = row.querySelector('.btn-remove-image');
+  const btnSeleccionarImagen = row.querySelector('.btn-seleccionar-imagen');
+
   const nombreInput = row.querySelector('.producto-nombre');
   const cantidadInput = row.querySelector('.producto-cantidad');
   const precioInput = row.querySelector('.producto-precio');
   const descuentoInput = row.querySelector('.producto-descuento');
+
   const fileInput = row.querySelector('.producto-imagen-file');
 
+  // Eliminar fila
   btnRemove.addEventListener('click', () => {
     row.remove();
     renumerarProductos();
     recalcularResumen();
   });
 
+  // Botón personalizado para abrir selector de imagen
+  if (btnSeleccionarImagen && fileInput) {
+    btnSeleccionarImagen.addEventListener('click', () => {
+      fileInput.click();
+    });
+  }
+
+  // Autocompletado producto
   nombreInput.addEventListener('input', () => {
     limpiarProductoSeleccionado(row);
     manejarBusquedaProducto(row);
   });
 
+  // Cálculos
   cantidadInput.addEventListener('input', () => recalcularFilaProducto(row));
   precioInput.addEventListener('input', () => recalcularFilaProducto(row));
   descuentoInput.addEventListener('input', () => recalcularFilaProducto(row));
 
+  // Advertencia antes de cambiar imagen existente
   fileInput.addEventListener('click', event => {
     advertirCambioImagenProducto(row, event);
   });
 
+  // Preview imagen
   fileInput.addEventListener('change', () => manejarPreviewImagen(row));
 
-  btnRemoveImage.addEventListener('click', () => {
-    manejarEliminarImagenProducto(row);
-  });
+  // Quitar imagen
+  if (btnRemoveImage) {
+    btnRemoveImage.addEventListener('click', () => {
+      manejarEliminarImagenProducto(row);
+    });
+  }
 
+  // Inicialización
   recalcularFilaProducto(row);
   actualizarEstadoVisualImagen(row);
 }
@@ -756,6 +791,8 @@ function limpiarProductoSeleccionado(row) {
 function limpiarPreviewImagenProducto(row) {
   const preview = row.querySelector('.product-preview');
   const img = row.querySelector('.producto-preview-img');
+  const nombreSpan = row.querySelector('.nombre-archivo-producto');
+  const fileInput = row.querySelector('.producto-imagen-file');
 
   if (img) {
     img.src = '';
@@ -763,6 +800,14 @@ function limpiarPreviewImagenProducto(row) {
 
   if (preview) {
     preview.classList.add('hidden');
+  }
+
+  if (fileInput) {
+    fileInput.value = '';
+  }
+
+  if (nombreSpan) {
+    nombreSpan.textContent = 'No se ha seleccionado imagen';
   }
 
   actualizarEstadoVisualImagen(row);
