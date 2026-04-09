@@ -71,7 +71,7 @@
       <button class="mobile-menu-btn" data-view="ventaView" type="button">💵 Nueva venta</button>
       <button class="mobile-menu-btn" data-view="facturasView" type="button">📝 Facturas</button>
       <button class="mobile-menu-btn" data-view="clientesView" type="button">👥 Clientes</button>
-      <button class="mobile-menu-btn" type="button" disabled>🛍️ Productos</button>
+      <button class="mobile-menu-btn" data-view="productosView" type="button">📦 Productos</button>
       <button class="mobile-menu-btn" type="button" disabled>📊 Reportes</button>
       <button class="mobile-menu-btn" type="button" disabled>🔎 Consultas</button>
     </div>
@@ -508,7 +508,183 @@
       </section>
 
       <!-- SECCIÓN PRODUCTOS-->
+      <section id="productosView" class="app-section">
+        <section class="module-card">
+          <div class="module-header module-header-flex">
+            <div>
+              <h2>Productos</h2>
+              <p class="helper-text">
+                Consulta, registra y actualiza la información base de los productos.
+              </p>
+            </div>
+          </div>
 
+          <div class="module-subcard">
+            <h3>Búsqueda</h3>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroProductoTexto">Código o nombre</label>
+                <input
+                  type="text"
+                  id="filtroProductoTexto"
+                  placeholder="Código o nombre del producto"
+                >
+              </div>
+
+              <div class="field-group">
+                <label for="filtroProductoOrigen">Origen</label>
+                <select id="filtroProductoOrigen">
+                  <option value="">Todos</option>
+                  <option value="CRO">Crochet</option>
+                  <option value="CRE">Creaciones</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroProductoEstado">Estado</label>
+                <select id="filtroProductoEstado">
+                  <option value="activos">Activos</option>
+                  <option value="inactivos">Inactivos</option>
+                  <option value="todos">Todos</option>
+                </select>
+              </div>
+
+              <div class="field-group field-group-empty"></div>
+            </div>
+
+            <div class="module-actions">
+              <button type="button" id="btnBuscarProductos" class="btn-primary-wide">
+                Buscar productos
+              </button>
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Resultados</h3>
+
+            <div id="productosEmptyState" class="helper-text">
+              Usa los filtros y pulsa “Buscar productos”.
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table hidden" id="tablaProductos">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Imagen</th>
+                    <th>Nombre</th>
+                    <th>Origen</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaProductosBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <div class="module-header module-header-flex">
+              <div>
+                <h3 id="productoFormTitulo">Nuevo producto</h3>
+              </div>
+
+              <button type="button" id="btnLimpiarProducto" class="btn-clear-form">
+                Limpiar formulario
+              </button>
+            </div>
+
+            <input type="hidden" id="productoIdForm">
+            <input type="hidden" id="productoImagenUrlForm">
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="productoCodigoForm">Código</label>
+                <input
+                  type="text"
+                  id="productoCodigoForm"
+                  readonly
+                  placeholder="Se genera automáticamente"
+                >
+              </div>
+
+              <div class="field-group">
+                <label for="productoNombreForm">Nombre</label>
+                <input
+                  type="text"
+                  id="productoNombreForm"
+                  placeholder="Nombre completo del producto"
+                >
+              </div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="productoOrigenForm">Origen</label>
+                <select id="productoOrigenForm">
+                  <option value="">Selecciona una línea de Negocio</option>
+                  <option value="CRO">Crochet</option>
+                  <option value="CRE">Creaciones</option>
+                </select>
+              </div>
+
+              <div class="field-group checkbox-field-group">
+                <label class="checkbox-inline">
+                  <input type="checkbox" id="productoActivoForm" checked>
+                  <span>Producto activo</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="productoImagenForm">Imagen</label>
+              <input
+                type="file"
+                id="productoImagenForm"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+              >
+            </div>
+
+            <div class="module-subcard product-image-subcard">
+              <h3>Vista previa</h3>
+
+              <div id="productoImagenPreviewWrap" class="product-form-preview hidden">
+                <img
+                  id="productoImagenPreview"
+                  src=""
+                  alt="Vista previa del producto"
+                  class="product-form-preview-img"
+                >
+                <div class="product-form-preview-actions">
+                  <button
+                    type="button"
+                    id="btnQuitarImagenProductoForm"
+                    class="btn-secondary-soft hidden"
+                  >
+                    Quitar imagen
+                  </button>
+                </div>
+              </div>
+
+              <div id="productoImagenPreviewEmpty" class="helper-text">
+                El producto no tiene imagen cargada.
+              </div>
+            </div>
+
+            <div class="module-actions">
+              <button type="button" id="btnGuardarProducto" class="btn-primary-wide">
+                Guardar producto
+              </button>
+              <button type="button" id="btnToggleEstadoProducto" class="btn-secondary-soft hidden">
+                Cambiar a inactivo
+              </button>
+            </div>
+          </div>
+        </section>
+      </section>
 
       <!-- SECCIÓN REPORTES -->
 

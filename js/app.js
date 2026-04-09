@@ -50,6 +50,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnLimpiarCliente').addEventListener('click', limpiarFormularioCliente);
   document.getElementById('btnToggleEstadoCliente').addEventListener('click', toggleEstadoCliente);
 
+  document.getElementById('btnBuscarProductos').addEventListener('click', buscarProductosGestion);
+  document.getElementById('btnGuardarProducto').addEventListener('click', guardarProductoGestion);
+  document.getElementById('btnLimpiarProducto').addEventListener('click', limpiarFormularioProducto);
+  document.getElementById('btnToggleEstadoProducto').addEventListener('click', toggleEstadoProducto);
+  document.getElementById('productoImagenForm').addEventListener('change', manejarPreviewImagenProductoGestion);
+  document.getElementById('btnQuitarImagenProductoForm').addEventListener('click', quitarImagenProductoGestion);
+
   configurarMenuMovil();
   configurarOrigenVenta();
   actualizarSeccionActiva('Inicio');
@@ -553,6 +560,7 @@ async function buscarProductos(term) {
     const { data, error } = await supabaseClient
       .from('productos')
       .select('id, producto_codigo, nombre, imagen_url')
+      .eq('activo', true)
       .ilike('nombre', `%${term}%`)
       .limit(8);
 
@@ -2282,6 +2290,450 @@ async function toggleEstadoCliente() {
   } catch (error) {
     console.error('Error cambiando estado del cliente:', error);
     alert(error.message || 'No fue posible cambiar el estado del cliente.');
+  }
+}
+
+/* =========================
+   PRODUCTOS - GESTIÓN
+========================= */
+
+let productoImagenLocalGestion = '';
+let productoEliminarImagenGestion = false;
+
+function limpiarFormularioProducto() {
+  document.getElementById('productoIdForm').value = '';
+  document.getElementById('productoCodigoForm').value = '';
+  document.getElementById('productoNombreForm').value = '';
+  document.getElementById('productoOrigenForm').value = '';
+  document.getElementById('productoActivoForm').checked = true;
+  document.getElementById('productoImagenUrlForm').value = '';
+  document.getElementById('productoImagenForm').value = '';
+
+  productoImagenLocalGestion = '';
+  productoEliminarImagenGestion = false;
+
+  document.getElementById('productoFormTitulo').textContent = 'Nuevo producto';
+
+  const btnToggle = document.getElementById('btnToggleEstadoProducto');
+  btnToggle.classList.add('hidden');
+  btnToggle.textContent = 'Cambiar a inactivo';
+
+  actualizarPreviewProductoGestion('');
+}
+
+function actualizarPreviewProductoGestion(src) {
+  const wrap = document.getElementById('productoImagenPreviewWrap');
+  const img = document.getElementById('productoImagenPreview');
+  const empty = document.getElementById('productoImagenPreviewEmpty');
+  const btnQuitar = document.getElementById('btnQuitarImagenProductoForm');
+
+  const tieneImagen = Boolean(src);
+
+  if (tieneImagen) {
+    img.src = src;
+    wrap.classList.remove('hidden');
+    empty.classList.add('hidden');
+    btnQuitar.classList.remove('hidden');
+  } else {
+    img.src = '';
+    wrap.classList.add('hidden');
+    empty.classList.remove('hidden');
+    btnQuitar.classList.add('hidden');
+  }
+}
+
+function validarArchivoImagenProductoGestion(file) {
+  return validarArchivoImagen(file);
+}
+
+function manejarPreviewImagenProductoGestion() {
+  const input = document.getElementById('productoImagenForm');
+  const file = input.files?.[0];
+
+  if (!file) {
+    productoImagenLocalGestion = '';
+    return;
+  }
+
+  const validacion = validarArchivoImagenProductoGestion(file);
+
+  if (!validacion.ok) {
+    alert(validacion.mensaje);
+    input.value = '';
+
+    const imagenActual = document.getElementById('productoImagenUrlForm').value;
+    productoImagenLocalGestion = '';
+
+    if (imagenActual && !productoEliminarImagenGestion) {
+      actualizarPreviewProductoGestion(imagenActual);
+    } else {
+      actualizarPreviewProductoGestion('');
+    }
+
+    return;
+  }
+
+  const productoId = document.getElementById('productoIdForm').value.trim();
+  const imagenActual = document.getElementById('productoImagenUrlForm').value.trim();
+
+  if (productoId && imagenActual) {
+    const ok = confirm(
+      'Este producto ya tiene una imagen. La nueva imagen sustituirá la imagen anterior al guardar. ¿Deseas continuar?'
+    );
+
+    if (!ok) {
+      input.value = '';
+      return;
+    }
+  }
+
+  productoEliminarImagenGestion = false;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    productoImagenLocalGestion = e.target?.result || '';
+    actualizarPreviewProductoGestion(productoImagenLocalGestion);
+  };
+  reader.readAsDataURL(file);
+}
+
+function quitarImagenProductoGestion() {
+  const productoId = document.getElementById('productoIdForm').value.trim();
+  const imagenActual = document.getElementById('productoImagenUrlForm').value.trim();
+  const tieneImagenLocal = Boolean(productoImagenLocalGestion);
+
+  if (!imagenActual && !tieneImagenLocal) {
+    return;
+  }
+
+  const mensaje = productoId && imagenActual
+    ? 'La imagen del producto se eliminará al guardar los cambios. ¿Deseas continuar?'
+    : 'La imagen seleccionada se quitará del formulario. ¿Deseas continuar?';
+
+  const ok = confirm(mensaje);
+  if (!ok) return;
+
+  document.getElementById('productoImagenForm').value = '';
+  productoImagenLocalGestion = '';
+  productoEliminarImagenGestion = Boolean(productoId && imagenActual);
+
+  actualizarPreviewProductoGestion('');
+}
+
+function obtenerDatosFormularioProducto() {
+  return {
+    id: document.getElementById('productoIdForm').value.trim(),
+    producto_codigo: document.getElementById('productoCodigoForm').value.trim(),
+    nombre: normalizarTexto(document.getElementById('productoNombreForm').value),
+    origen_codigo: document.getElementById('productoOrigenForm').value,
+    activo: document.getElementById('productoActivoForm').checked,
+    imagen_url: document.getElementById('productoImagenUrlForm').value.trim()
+  };
+}
+
+function validarFormularioProducto(data) {
+  const errores = [];
+
+  if (!data.nombre) {
+    errores.push('Debes ingresar el nombre del producto.');
+  }
+
+  if (!data.origen_codigo) {
+    errores.push('Debes seleccionar el origen del producto.');
+  }
+
+  return errores;
+}
+
+async function buscarProductosGestion() {
+  try {
+    const texto = normalizarTexto(
+      document.getElementById('filtroProductoTexto').value
+    );
+
+    const origen = document.getElementById('filtroProductoOrigen').value;
+    const estado = document.getElementById('filtroProductoEstado').value;
+
+    let query = supabaseClient
+      .from('productos')
+      .select(`
+        id,
+        producto_codigo,
+        nombre,
+        imagen_url,
+        activo,
+        created_at
+      `)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (texto) {
+      query = query.or(
+        `producto_codigo.ilike.%${texto}%,nombre.ilike.%${texto}%`
+      );
+    }
+
+    if (origen) {
+      query = query.ilike('producto_codigo', `${origen}-%`);
+    }
+
+    if (estado === 'activos') {
+      query = query.eq('activo', true);
+    } else if (estado === 'inactivos') {
+      query = query.eq('activo', false);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    renderTablaProductos(data || []);
+  } catch (error) {
+    console.error('Error buscando productos:', error);
+    alert(error.message || 'Ocurrió un error al buscar productos.');
+  }
+}
+
+function renderTablaProductos(productos) {
+  const table = document.getElementById('tablaProductos');
+  const body = document.getElementById('tablaProductosBody');
+  const empty = document.getElementById('productosEmptyState');
+
+  body.innerHTML = '';
+
+  if (!productos.length) {
+    table.classList.add('hidden');
+    empty.textContent = 'No se encontraron productos con esos filtros.';
+    return;
+  }
+
+  empty.textContent = '';
+  table.classList.remove('hidden');
+
+  productos.forEach(item => {
+    const origen = String(item.producto_codigo || '').startsWith('CRO-')
+      ? 'Crochet'
+      : String(item.producto_codigo || '').startsWith('CRE-')
+        ? 'Creaciones'
+        : '';
+
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${escapeHtml(item.producto_codigo || '')}</td>
+      <td>
+        ${
+          item.imagen_url
+            ? `<img src="${item.imagen_url}" alt="${escapeHtml(item.nombre || '')}" class="product-thumb">`
+            : `<div class="product-thumb-empty">Sin<br>imagen</div>`
+        }
+      </td>
+      <td>${escapeHtml(item.nombre || '')}</td>
+      <td>${escapeHtml(origen)}</td>
+      <td>${item.activo ? 'Activo' : 'Inactivo'}</td>
+      <td>
+        <button
+          type="button"
+          class="table-action-btn"
+          data-producto-id="${item.id}"
+        >
+          Editar
+        </button>
+      </td>
+    `;
+
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('.table-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cargarProductoEnFormulario(btn.dataset.productoId);
+    });
+  });
+}
+
+async function cargarProductoEnFormulario(productoId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('productos')
+      .select(`
+        id,
+        producto_codigo,
+        nombre,
+        imagen_url,
+        activo
+      `)
+      .eq('id', productoId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    const origenCodigo = String(data.producto_codigo || '').startsWith('CRO-')
+      ? 'CRO'
+      : String(data.producto_codigo || '').startsWith('CRE-')
+        ? 'CRE'
+        : '';
+
+    document.getElementById('productoIdForm').value = data.id || '';
+    document.getElementById('productoCodigoForm').value = data.producto_codigo || '';
+    document.getElementById('productoNombreForm').value = data.nombre || '';
+    document.getElementById('productoOrigenForm').value = origenCodigo;
+    document.getElementById('productoActivoForm').checked = !!data.activo;
+    document.getElementById('productoImagenUrlForm').value = data.imagen_url || '';
+    document.getElementById('productoImagenForm').value = '';
+
+    productoImagenLocalGestion = '';
+    productoEliminarImagenGestion = false;
+
+    document.getElementById('productoFormTitulo').textContent = 'Editar producto';
+
+    const btnToggle = document.getElementById('btnToggleEstadoProducto');
+    btnToggle.classList.remove('hidden');
+    btnToggle.textContent = data.activo
+      ? 'Cambiar a inactivo'
+      : 'Cambiar a activo';
+
+    actualizarPreviewProductoGestion(data.imagen_url || '');
+  } catch (error) {
+    console.error('Error cargando producto:', error);
+    alert(error.message || 'No fue posible cargar el producto.');
+  }
+}
+
+async function guardarProductoGestion() {
+  try {
+    const data = obtenerDatosFormularioProducto();
+    const errores = validarFormularioProducto(data);
+
+    if (errores.length) {
+      alert(errores.join('\n'));
+      return;
+    }
+
+    const file = document.getElementById('productoImagenForm').files?.[0] || null;
+
+    if (data.id) {
+      let imagenFinal = data.imagen_url || null;
+
+      if (productoEliminarImagenGestion && data.imagen_url) {
+        await eliminarImagenStorage(data.imagen_url);
+        imagenFinal = null;
+      }
+
+      if (file) {
+        const validacion = validarArchivoImagenProductoGestion(file);
+        if (!validacion.ok) {
+          alert(validacion.mensaje);
+          return;
+        }
+
+        const path = construirRutaImagenProducto(data.producto_codigo, file);
+        imagenFinal = await subirImagenProductoStorage(file, path);
+      }
+
+      const { error } = await supabaseClient
+        .from('productos')
+        .update({
+          nombre: data.nombre,
+          imagen_url: imagenFinal,
+          activo: data.activo
+        })
+        .eq('id', data.id);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('Producto actualizado correctamente.');
+    } else {
+      const productoCodigo = await generarCodigoProducto(data.origen_codigo);
+
+      let imagenFinal = null;
+
+      if (file) {
+        const validacion = validarArchivoImagenProductoGestion(file);
+        if (!validacion.ok) {
+          alert(validacion.mensaje);
+          return;
+        }
+
+        const path = construirRutaImagenProducto(productoCodigo, file);
+        imagenFinal = await subirImagenProductoStorage(file, path);
+      }
+
+      const { error } = await supabaseClient
+        .from('productos')
+        .insert([
+          {
+            producto_codigo: productoCodigo,
+            nombre: data.nombre,
+            categoria_producto_id: null,
+            imagen_url: imagenFinal,
+            activo: true
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('Producto creado correctamente.');
+    }
+
+    limpiarFormularioProducto();
+    await buscarProductosGestion();
+  } catch (error) {
+    console.error('Error guardando producto:', error);
+    alert(error.message || 'Ocurrió un error al guardar el producto.');
+  }
+}
+
+async function toggleEstadoProducto() {
+  try {
+    const productoId = document.getElementById('productoIdForm').value.trim();
+
+    if (!productoId) {
+      alert('Primero debes seleccionar un producto.');
+      return;
+    }
+
+    const activoActual = document.getElementById('productoActivoForm').checked;
+    const nuevoEstado = !activoActual;
+
+    const mensaje = nuevoEstado
+      ? '¿Deseas activar este producto?'
+      : '¿Deseas inactivar este producto?';
+
+    const ok = confirm(mensaje);
+    if (!ok) return;
+
+    const { error } = await supabaseClient
+      .from('productos')
+      .update({
+        activo: nuevoEstado
+      })
+      .eq('id', productoId);
+
+    if (error) {
+      throw error;
+    }
+
+    document.getElementById('productoActivoForm').checked = nuevoEstado;
+
+    const btnToggle = document.getElementById('btnToggleEstadoProducto');
+    btnToggle.textContent = nuevoEstado
+      ? 'Cambiar a inactivo'
+      : 'Cambiar a activo';
+
+    alert(`Producto ${nuevoEstado ? 'activado' : 'inactivado'} correctamente.`);
+    await buscarProductosGestion();
+  } catch (error) {
+    console.error('Error cambiando estado del producto:', error);
+    alert(error.message || 'No fue posible cambiar el estado del producto.');
   }
 }
 

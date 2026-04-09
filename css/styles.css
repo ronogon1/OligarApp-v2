@@ -787,7 +787,7 @@ img {
 }
 
 /* 
-INICIO DEL MODAL FACTURA 
+MODAL FACTURA 
 */
 
 .factura-modal {
@@ -1102,9 +1102,6 @@ INICIO DEL MODAL FACTURA
 
 }
 
-/* 
-FIN DE MODAL FACTURA 
-*/
 
 /* 
 INICIO DE CONFIGURACIÓN PARA LA TABLA DE VISTA DE FACTURAS 
@@ -1173,10 +1170,6 @@ INICIO DE CONFIGURACIÓN PARA LA TABLA DE VISTA DE FACTURAS
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
 }
 
-/* 
-FIN DE LA CONFIGURACIÓN DE VISTA DE TABLA DE FACTURAS
-*/
-
 
 /* 
 FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
@@ -1226,9 +1219,6 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   visibility: hidden;
 }
 
-/* 
-FIN DE FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
-*/
 
 /* FORMATO DE BOTON DE INICIO EN TODAS LAS PANTALLAS DE LA APP */
 
@@ -1240,4 +1230,60 @@ FIN DE FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 
 .btn-home:hover {
   background: rgba(126, 87, 194, 0.08) !important;
+}
+
+
+/* MINIATURAS Y PREVIEW DE PRODUCTOS EN GESTIÓN DE PRODUCTOS */
+
+.product-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+  background: #f4efe9;
+}
+
+.product-thumb-empty {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: #f4efe9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9f8c80;
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.product-image-subcard {
+  margin-top: 14px;
+}
+
+.product-form-preview {
+  display: flex;
+  align-items: start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.product-form-preview-img {
+  width: 180px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 14px;
+  background: #f4efe9;
+  display: block;
+}
+
+.product-form-preview-actions {
+  display: flex;
+  align-items: center;
+  min-height: 180px;
+}
+
+.hidden {
+  display: none !important;
 }
