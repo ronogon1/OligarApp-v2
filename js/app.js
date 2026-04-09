@@ -473,7 +473,7 @@ function agregarFilaProducto() {
               accept="image/jpeg,image/jpg,image/png,image/webp"
             >
 
-            <button type="button" class="btn-secondary-soft btn-seleccionar-imagen">
+            <button type="button" class="btn-secondary btn-seleccionar-imagen">
               📷 Seleccionar imagen
             </button>
 
@@ -2342,7 +2342,7 @@ async function toggleEstadoCliente() {
 }
 
 /* =========================
-   PRODUCTOS - GESTIÓN
+   GESTIÓN DE PRODUCTOS
 ========================= */
 
 let productoImagenLocalGestion = '';

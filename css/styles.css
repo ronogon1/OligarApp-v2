@@ -429,7 +429,8 @@ img {
   box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.12);
 }
 
-.btn-secondary-soft {
+.btn-secondary-soft,
+.btn-secondary {
   border: 1px solid var(--deep-lilac);
   background: var(--white);
   color: var(--mauve-bark);
