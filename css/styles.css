@@ -75,6 +75,7 @@ img {
 }
 
 .btn-primary-wide,
+.btn-confirm,
 .table-action-btn {
   font: inherit;
   cursor: pointer;
