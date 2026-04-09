@@ -1305,6 +1305,12 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 
 .btn-remove-image {
   margin-top: 8px;
-  border-color: #d57373;
-  color: #c62828;
+  border: 1px solid var(--oxblood);
+  background: var(--white);
+  color: var(--oxblood);
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
 }
