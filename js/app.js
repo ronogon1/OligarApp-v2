@@ -2433,9 +2433,14 @@ function actualizarBotonPrincipalTopbar() {
     .getElementById('homeView')
     ?.classList.contains('active-section');
 
+  // Limpia solo la clase de inicio (no tocamos la de salir)
+  btn.classList.remove('btn-home');
+
   if (homeActiva) {
     btn.textContent = '🚪 Salir';
+    // se queda con su estilo rojo actual
   } else {
     btn.textContent = '🏠 Inicio';
+    btn.classList.add('btn-home');
   }
 }

@@ -1229,3 +1229,14 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 /* 
 FIN DE FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 */
+
+/* FORMATO DE BOTON DE INICIO EN TODAS LAS PANTALLAS DE LA APP */
+
+.btn-home {
+  background: #8b5cf6 !important;
+  color: #fff !important;
+}
+
+.btn-home:hover {
+  background: #7c3aed !important;
+}
