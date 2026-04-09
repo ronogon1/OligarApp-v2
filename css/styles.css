@@ -1234,10 +1234,10 @@ FIN DE FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 
 .btn-home {
   background: transparent !important;
-  color: #6b4a3a !important;
-  border: 2px solid --deep-lilac !important;
+  color: #7E57C2 !important;
+  border: 1.5px solid #7E57C2 !important;
 }
 
 .btn-home:hover {
-  background: #f5f1ed !important;
+  background: rgba(126, 87, 194, 0.08) !important;
 }
