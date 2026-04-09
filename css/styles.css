@@ -1314,3 +1314,44 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   border-radius: 12px;
   cursor: pointer;
 }
+
+/* Estilo para la sección de costos */
+
+.cost-input {
+  width: 110px;
+  min-width: 110px;
+  padding: 10px 12px;
+  border: 1px solid var(--dust-grey);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--mauve-bark);
+  font: inherit;
+  outline: none;
+}
+
+.cost-input:focus {
+  border-color: var(--deep-lilac);
+  box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.12);
+}
+
+.cost-readonly {
+  color: var(--deep-lilac);
+  font-weight: 600;
+}
+
+.table-actions-wrap {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.costos-panel-open {
+  scroll-margin-top: 130px;
+}
+
+@media (max-width: 640px) {
+  .cost-input {
+    width: 100%;
+    min-width: unset;
+  }
+}

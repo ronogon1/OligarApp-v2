@@ -1893,22 +1893,38 @@ function renderTablaFacturas(facturas) {
       <td>C$ ${formatearMontoFactura(item.saldo_pendiente || 0)}</td>
       <td>${escapeHtml(item.estado_nombre || '')}</td>
       <td>
-        <button
-          type="button"
-          class="table-action-btn"
-          data-factura-id="${item.id}"
-        >
-          Ver / Reimprimir
-        </button>
+        <div class="table-actions-wrap">
+          <button
+            type="button"
+            class="table-action-btn btn-ver-factura"
+            data-factura-id="${item.id}"
+          >
+            Ver / Reimprimir
+          </button>
+
+          <button
+            type="button"
+            class="table-action-btn btn-costos-factura"
+            data-factura-id="${item.id}"
+          >
+            Cargar costos
+          </button>
+        </div>
       </td>
     `;
 
     body.appendChild(tr);
   });
 
-  body.querySelectorAll('.table-action-btn').forEach(btn => {
+  body.querySelectorAll('.btn-ver-factura').forEach(btn => {
     btn.addEventListener('click', () => {
       abrirFacturaGuardada(btn.dataset.facturaId);
+    });
+  });
+
+  body.querySelectorAll('.btn-costos-factura').forEach(btn => {
+    btn.addEventListener('click', () => {
+      abrirPanelCostosFactura(btn.dataset.facturaId);
     });
   });
 }
@@ -2035,6 +2051,316 @@ function mostrarFacturaDesdeBD(payload) {
     { factura_codigo: factura.factura_codigo },
     factura.clientes?.nombre || ''
   );
+}
+
+/* CARGA DE COSTOS POR FACTURA-PRODUCTO
+==================== */
+
+let facturaCostosActual = null;
+
+async function abrirPanelCostosFactura(facturaId) {
+  try {
+    const payload = await obtenerFacturaCompletaConCostos(facturaId);
+    facturaCostosActual = payload;
+    renderPanelCostosFactura(payload);
+
+    const panel = document.getElementById('costosFacturaPanel');
+    panel.classList.remove('hidden');
+    panel.classList.add('costos-panel-open');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    console.error('Error abriendo panel de costos:', error);
+    alert(error.message || 'No fue posible cargar los costos de la factura.');
+  }
+}
+
+async function obtenerFacturaCompletaConCostos(facturaId) {
+  const payload = await obtenerFacturaCompleta(facturaId);
+
+  const { data: costos, error } = await supabaseClient
+    .from('costos_producto')
+    .select(`
+      id,
+      factura_id,
+      detalle_factura_id,
+      producto_id,
+      cantidad,
+      mo_unitario,
+      materiales_unitario,
+      costo_unitario,
+      total_mo,
+      total_materiales,
+      total_costo,
+      observacion
+    `)
+    .eq('factura_id', facturaId);
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    ...payload,
+    costos: costos || []
+  };
+}
+
+function renderPanelCostosFactura(payload) {
+  const factura = payload.factura;
+  const detalles = payload.detalles || [];
+  const costos = payload.costos || [];
+
+  const panel = document.getElementById('costosFacturaPanel');
+  const resumen = document.getElementById('costosFacturaResumen');
+  const empty = document.getElementById('costosFacturaEmpty');
+  const table = document.getElementById('tablaCostosFactura');
+  const body = document.getElementById('tablaCostosFacturaBody');
+  const totalesCard = document.getElementById('costosFacturaTotales');
+
+  body.innerHTML = '';
+
+  resumen.textContent = [
+    `Factura: ${factura.factura_codigo || ''}`,
+    `Cliente: ${factura.clientes?.nombre || ''}`,
+    `Fecha: ${formatearFechaFactura(factura.fecha || '')}`
+  ].join(' | ');
+
+  if (!detalles.length) {
+    empty.textContent = 'La factura no tiene productos para cargar costos.';
+    empty.classList.remove('hidden');
+    table.classList.add('hidden');
+    totalesCard.classList.add('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  table.classList.remove('hidden');
+  totalesCard.classList.remove('hidden');
+
+  detalles.forEach((detalle, index) => {
+    const costoExistente = costos.find(item =>
+      item.detalle_factura_id === detalle.id
+    );
+
+    const cantidad = Number(detalle.cantidad || 0);
+    const precioUnit = Number(detalle.precio_unit || 0);
+    const subtotalVenta = Number(detalle.subtotal || 0);
+    const moUnit = Number(costoExistente?.mo_unitario || 0);
+    const materialesUnit = Number(costoExistente?.materiales_unitario || 0);
+    const costoUnit = redondear2(moUnit + materialesUnit);
+    const totalMo = redondear2(cantidad * moUnit);
+    const totalMateriales = redondear2(cantidad * materialesUnit);
+    const totalCosto = redondear2(cantidad * costoUnit);
+
+    const tr = document.createElement('tr');
+    tr.dataset.detalleFacturaId = detalle.id;
+    tr.dataset.facturaId = factura.id;
+    tr.dataset.productoId = detalle.productos?.id || '';
+    tr.dataset.cantidad = cantidad;
+
+    tr.innerHTML = `
+      <td>${escapeHtml(detalle.productos?.producto_codigo || '')}</td>
+      <td>${escapeHtml(detalle.productos?.nombre || '')}</td>
+      <td>${cantidad}</td>
+      <td>C$ ${formatearMontoFactura(precioUnit)}</td>
+      <td>C$ ${formatearMontoFactura(subtotalVenta)}</td>
+      <td>
+        <input
+          type="number"
+          class="cost-input input-mo-unitario"
+          min="0"
+          step="0.01"
+          value="${moUnit}"
+        >
+      </td>
+      <td>
+        <input
+          type="number"
+          class="cost-input input-materiales-unitario"
+          min="0"
+          step="0.01"
+          value="${materialesUnit}"
+        >
+      </td>
+      <td class="cost-readonly cell-costo-unitario">
+        C$ ${formatearMontoFactura(costoUnit)}
+      </td>
+      <td class="cost-readonly cell-total-mo">
+        C$ ${formatearMontoFactura(totalMo)}
+      </td>
+      <td class="cost-readonly cell-total-materiales">
+        C$ ${formatearMontoFactura(totalMateriales)}
+      </td>
+      <td class="cost-readonly cell-total-costo">
+        C$ ${formatearMontoFactura(totalCosto)}
+      </td>
+    `;
+
+    body.appendChild(tr);
+  });
+
+  activarCalculoTablaCostos();
+  recalcularTotalesCostosFactura();
+}
+
+function activarCalculoTablaCostos() {
+  document.querySelectorAll('#tablaCostosFacturaBody tr').forEach(row => {
+    const inputMo = row.querySelector('.input-mo-unitario');
+    const inputMateriales = row.querySelector('.input-materiales-unitario');
+
+    [inputMo, inputMateriales].forEach(input => {
+      input.addEventListener('input', () => {
+        recalcularFilaCosto(row);
+        recalcularTotalesCostosFactura();
+      });
+    });
+  });
+}
+
+function recalcularFilaCosto(row) {
+  const cantidad = Number(row.dataset.cantidad || 0);
+  const moUnit = redondear2(
+    parseFloat(row.querySelector('.input-mo-unitario').value || '0')
+  );
+  const materialesUnit = redondear2(
+    parseFloat(row.querySelector('.input-materiales-unitario').value || '0')
+  );
+
+  const costoUnit = redondear2(moUnit + materialesUnit);
+  const totalMo = redondear2(cantidad * moUnit);
+  const totalMateriales = redondear2(cantidad * materialesUnit);
+  const totalCosto = redondear2(cantidad * costoUnit);
+
+  row.querySelector('.cell-costo-unitario').textContent =
+    `C$ ${formatearMontoFactura(costoUnit)}`;
+
+  row.querySelector('.cell-total-mo').textContent =
+    `C$ ${formatearMontoFactura(totalMo)}`;
+
+  row.querySelector('.cell-total-materiales').textContent =
+    `C$ ${formatearMontoFactura(totalMateriales)}`;
+
+  row.querySelector('.cell-total-costo').textContent =
+    `C$ ${formatearMontoFactura(totalCosto)}`;
+}
+
+function recalcularTotalesCostosFactura() {
+  const rows = [...document.querySelectorAll('#tablaCostosFacturaBody tr')];
+
+  const totalMo = rows.reduce((acc, row) => {
+    const cantidad = Number(row.dataset.cantidad || 0);
+    const moUnit = redondear2(
+      parseFloat(row.querySelector('.input-mo-unitario').value || '0')
+    );
+    return acc + redondear2(cantidad * moUnit);
+  }, 0);
+
+  const totalMateriales = rows.reduce((acc, row) => {
+    const cantidad = Number(row.dataset.cantidad || 0);
+    const materialesUnit = redondear2(
+      parseFloat(row.querySelector('.input-materiales-unitario').value || '0')
+    );
+    return acc + redondear2(cantidad * materialesUnit);
+  }, 0);
+
+  const totalGeneral = redondear2(totalMo + totalMateriales);
+
+  document.getElementById('costosFacturaTotalMo').textContent =
+    `C$ ${formatearMontoFactura(totalMo)}`;
+
+  document.getElementById('costosFacturaTotalMateriales').textContent =
+    `C$ ${formatearMontoFactura(totalMateriales)}`;
+
+  document.getElementById('costosFacturaTotalGeneral').textContent =
+    `C$ ${formatearMontoFactura(totalGeneral)}`;
+}
+
+function obtenerCostosFacturaFormulario() {
+  const rows = [...document.querySelectorAll('#tablaCostosFacturaBody tr')];
+
+  return rows.map(row => {
+    const facturaId = row.dataset.facturaId;
+    const detalleFacturaId = row.dataset.detalleFacturaId;
+    const productoId = row.dataset.productoId;
+    const cantidad = redondear2(Number(row.dataset.cantidad || 0));
+    const moUnit = redondear2(
+      parseFloat(row.querySelector('.input-mo-unitario').value || '0')
+    );
+    const materialesUnit = redondear2(
+      parseFloat(row.querySelector('.input-materiales-unitario').value || '0')
+    );
+    const costoUnit = redondear2(moUnit + materialesUnit);
+    const totalMo = redondear2(cantidad * moUnit);
+    const totalMateriales = redondear2(cantidad * materialesUnit);
+    const totalCosto = redondear2(cantidad * costoUnit);
+
+    return {
+      factura_id: facturaId,
+      detalle_factura_id: detalleFacturaId,
+      producto_id: productoId || null,
+      cantidad,
+      mo_unitario: moUnit,
+      materiales_unitario: materialesUnit,
+      costo_unitario: costoUnit,
+      total_mo: totalMo,
+      total_materiales: totalMateriales,
+      total_costo: totalCosto,
+      observacion: null
+    };
+  });
+}
+
+async function guardarCostosFacturaActual() {
+  try {
+    if (!facturaCostosActual?.factura?.id) {
+      throw new Error('No hay factura seleccionada para guardar costos.');
+    }
+
+    const facturaId = facturaCostosActual.factura.id;
+    const payload = obtenerCostosFacturaFormulario();
+
+    const btn = document.getElementById('btnGuardarCostosFactura');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const { error: deleteError } = await supabaseClient
+      .from('costos_producto')
+      .delete()
+      .eq('factura_id', facturaId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    if (payload.length) {
+      const { error: insertError } = await supabaseClient
+        .from('costos_producto')
+        .insert(payload);
+
+      if (insertError) {
+        throw insertError;
+      }
+    }
+
+    alert('Costos guardados correctamente.');
+    await abrirPanelCostosFactura(facturaId);
+  } catch (error) {
+    console.error('Error guardando costos:', error);
+    alert(error.message || 'No fue posible guardar los costos.');
+  } finally {
+    const btn = document.getElementById('btnGuardarCostosFactura');
+    btn.disabled = false;
+    btn.textContent = 'Guardar costos';
+  }
+}
+
+function cerrarPanelCostosFactura() {
+  document.getElementById('costosFacturaPanel').classList.add('hidden');
+  document.getElementById('tablaCostosFacturaBody').innerHTML = '';
+  document.getElementById('tablaCostosFactura').classList.add('hidden');
+  document.getElementById('costosFacturaTotales').classList.add('hidden');
+  document.getElementById('costosFacturaEmpty').classList.remove('hidden');
+  facturaCostosActual = null;
 }
 
 

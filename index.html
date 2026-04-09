@@ -226,6 +226,8 @@
 
       <!-- SECCIÓN FACTURA -->
       <section id="facturasView" class="app-section">
+
+        <!-- sub sección consulta de factura -->
         <section class="module-card">
           <div class="module-header module-header-flex">
             <div>
@@ -318,7 +320,7 @@
                     <th>Pagado</th>
                     <th>Saldo</th>
                     <th>Estado</th>
-                    <th>Acción</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="tablaFacturasBody"></tbody>
@@ -326,6 +328,75 @@
             </div>
           </div>
         </section>
+
+        <!-- sub sección cargar costos -->
+        <div id="costosFacturaPanel" class="module-subcard hidden">
+          <div class="module-header module-header-flex">
+            <div>
+              <h3>Cargar costos por factura</h3>
+              <p id="costosFacturaResumen" class="helper-text">
+                Selecciona una factura para cargar sus costos.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              id="btnCerrarCostosFactura"
+              class="btn-clear-form"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <div id="costosFacturaEmpty" class="helper-text">
+            No hay detalle para mostrar.
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table hidden" id="tablaCostosFactura">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>P. Unit.</th>
+                  <th>Subtotal venta</th>
+                  <th>MO unit.</th>
+                  <th>Materiales unit.</th>
+                  <th>Costo unit.</th>
+                  <th>Total MO</th>
+                  <th>Total materiales</th>
+                  <th>Total costo</th>
+                </tr>
+              </thead>
+              <tbody id="tablaCostosFacturaBody"></tbody>
+            </table>
+          </div>
+
+          <div id="costosFacturaTotales" class="summary-card hidden">
+            <div class="summary-row">
+              <span>Total mano de obra</span>
+              <strong id="costosFacturaTotalMo">C$ 0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Total materiales</span>
+              <strong id="costosFacturaTotalMateriales">C$ 0.00</strong>
+            </div>
+            <div class="summary-row total-row">
+              <span>Total costo factura</span>
+              <strong id="costosFacturaTotalGeneral">C$ 0.00</strong>
+            </div>
+          </div>
+
+          <div class="module-actions">
+            <button type="button" id="btnGuardarCostosFactura" class="btn-confirm">
+              Guardar costos
+            </button>
+          </div>
+        </div>
+
+        <!-- sub sección registrar envío -->
+
       </section>
 
       <!-- SECCIÓN CLIENTES -->
