@@ -2913,8 +2913,7 @@ function actualizarBotonPrincipalTopbar() {
   btn.classList.remove('btn-home');
 
   if (homeActiva) {
-    btn.textContent = '🟡 Salir';
-    // se queda con su estilo rojo actual
+    btn.textContent = 'Salir';
   } else {
     btn.textContent = '🏠 Inicio';
     btn.classList.add('btn-home');

@@ -55,6 +55,23 @@ img {
   display: block;
 }
 
+.btn-primary,
+.btn-secondary,
+.btn-menu,
+.btn-logout,
+.btn-clear-form,
+.btn-remove {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.btn-primary-wide,
+.table-action-btn {
+  font: inherit;
+  cursor: pointer;
+}
+
 /* LOGIN */
 #loginView.active {
   min-height: 100vh;
@@ -102,11 +119,8 @@ img {
 
 .btn-primary {
   border: none;
-  border-radius: 12px;
   padding: 12px 16px;
-  font: inherit;
   font-weight: 600;
-  cursor: pointer;
   background: var(--deep-lilac);
   color: var(--white);
 }
@@ -200,11 +214,8 @@ img {
   border: none;
   background: var(--oxblood);
   color: var(--white);
-  border-radius: 12px;
   padding: 10px 14px;
-  font: inherit;
   font-weight: 600;
-  cursor: pointer;
 }
 
 .btn-menu {
@@ -214,11 +225,8 @@ img {
   border: none;
   background: var(--deep-lilac);
   color: var(--white);
-  border-radius: 12px;
   padding: 10px 14px;
-  font: inherit;
   font-weight: 600;
-  cursor: pointer;
 }
 
 /* MOBILE MENU */
@@ -429,16 +437,12 @@ img {
   box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.12);
 }
 
-.btn-secondary-soft,
 .btn-secondary {
   border: 1px solid var(--deep-lilac);
   background: var(--white);
   color: var(--mauve-bark);
-  border-radius: 12px;
   padding: 12px 18px;
-  font: inherit;
   font-weight: 600;
-  cursor: pointer;
 }
 
 .summary-card {
@@ -476,9 +480,7 @@ img {
   color: var(--white);
   border-radius: 14px;
   padding: 15px 22px;
-  font: inherit;
   font-weight: 700;
-  cursor: pointer;
 }
 
 /* RESPONSIVE */
@@ -652,11 +654,8 @@ img {
   border: none;
   background: var(--error-blush);
   color: var(--oxblood);
-  border-radius: 12px;
   padding: 12px 14px;
-  font: inherit;
   font-weight: 700;
-  cursor: pointer;
   min-width: 48px;
 }
 
@@ -762,11 +761,8 @@ img {
   border: 1px solid var(--oxblood);
   background: var(--white);
   color: var(--oxblood);
-  border-radius: 12px;
   padding: 10px 16px;
-  font: inherit;
   font-weight: 600;
-  cursor: pointer;
 }
 
 .item-card-title {
@@ -1285,9 +1281,6 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   min-height: 180px;
 }
 
-.hidden {
-  display: none !important;
-}
 
 /* Estilo para el botón de selección de imagen */
 
