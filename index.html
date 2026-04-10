@@ -329,6 +329,9 @@
           </div>
         </section>
 
+        <!-- sub sección editar factura -->
+        
+
         <!-- sub sección cargar costos -->
         <div id="costosFacturaPanel" class="module-subcard hidden">
           <div class="module-header module-header-flex">
@@ -396,6 +399,85 @@
         </div>
 
         <!-- sub sección registrar envío -->
+        <div id="envioFacturaPanel" class="module-subcard hidden">
+          <div class="module-header module-header-flex">
+            <div>
+              <h3>Registro de envío</h3>
+              <p id="envioFacturaResumen" class="helper-text">
+                Selecciona una factura para registrar el costo y la dirección.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              id="btnCerrarEnvioFactura"
+              class="btn-clear-form"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <div class="venta-grid">
+            <div class="field-group">
+              <label for="costoEnvioFactura">Costo de envío (C$)</label>
+              <input
+                type="number"
+                id="costoEnvioFactura"
+                min="0"
+                step="0.01"
+                value="0"
+              >
+            </div>
+
+            <div class="field-group field-group-empty"></div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Direcciones del cliente</h3>
+
+            <div class="field-group">
+              <label class="checkbox-inline">
+                <input type="radio" name="direccionEnvioSeleccionada" value="1">
+                <span>Usar dirección 1</span>
+              </label>
+              <input
+                type="text"
+                id="direccionEnvio1Factura"
+                placeholder="Dirección de envío 1"
+              >
+            </div>
+
+            <div class="field-group">
+              <label class="checkbox-inline">
+                <input type="radio" name="direccionEnvioSeleccionada" value="2">
+                <span>Usar dirección 2</span>
+              </label>
+              <input
+                type="text"
+                id="direccionEnvio2Factura"
+                placeholder="Dirección de envío 2"
+              >
+            </div>
+
+            <div class="field-group">
+              <label class="checkbox-inline">
+                <input type="radio" name="direccionEnvioSeleccionada" value="3">
+                <span>Usar dirección 3</span>
+              </label>
+              <input
+                type="text"
+                id="direccionEnvio3Factura"
+                placeholder="Dirección de envío 3"
+              >
+            </div>
+          </div>
+
+          <div class="module-actions">
+            <button type="button" id="btnGuardarEnvioFactura" class="btn-confirm">
+              Guardar envío
+            </button>
+          </div>
+        </div> 
 
       </section>
 

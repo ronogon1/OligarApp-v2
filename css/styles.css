@@ -1315,6 +1315,21 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   cursor: pointer;
 }
 
+/* Estilos para tabla de factura */
+
+.table-actions-wrap {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.table-actions-wrap .table-action-btn {
+  white-space: nowrap;
+}
+
+
 /* Estilo para la sección de costos */
 
 .cost-input {
@@ -1337,12 +1352,6 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 .cost-readonly {
   color: var(--deep-lilac);
   font-weight: 600;
-}
-
-.table-actions-wrap {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .costos-panel-open {
@@ -1378,4 +1387,14 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
     width: 100%;
     min-width: unset;
   }
+}
+
+/* Estilos para subsección envío */
+
+#envioFacturaPanel .field-group {
+  margin-bottom: 14px;
+}
+
+#envioFacturaPanel .checkbox-inline {
+  margin-bottom: 8px;
 }

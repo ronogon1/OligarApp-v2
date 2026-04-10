@@ -63,6 +63,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     ?.addEventListener('click', guardarCostosFacturaActual);
   document.getElementById('btnCerrarCostosFactura')
     ?.addEventListener('click', cerrarPanelCostosFactura);
+  
+  document.getElementById('btnGuardarEnvioFactura')
+  ?.addEventListener('click', guardarEnvioFacturaActual);
+  document.getElementById('btnCerrarEnvioFactura')
+    ?.addEventListener('click', cerrarPanelEnvioFactura);
 
   configurarMenuMovil();
   configurarOrigenVenta();
@@ -1913,6 +1918,14 @@ function renderTablaFacturas(facturas) {
           >
             Cargar costos
           </button>
+
+          <button
+            type="button"
+            class="table-action-btn btn-envio-factura"
+            data-factura-id="${item.id}"
+          >
+            Registro de envío
+          </button>
         </div>
       </td>
     `;
@@ -1929,6 +1942,12 @@ function renderTablaFacturas(facturas) {
   body.querySelectorAll('.btn-costos-factura').forEach(btn => {
     btn.addEventListener('click', () => {
       abrirPanelCostosFactura(btn.dataset.facturaId);
+    });
+  });
+
+  body.querySelectorAll('.btn-envio-factura').forEach(btn => {
+    btn.addEventListener('click', () => {
+      abrirPanelEnvioFactura(btn.dataset.facturaId);
     });
   });
 }
@@ -1952,13 +1971,18 @@ async function obtenerFacturaCompleta(facturaId) {
       fecha,
       subtotal_factura,
       envio,
+      costo_envio,
       desc_global,
       total_factura,
       pagado,
       observaciones,
       clientes (
         id,
-        nombre
+        nombre,
+        telefono,
+        direccion_envio1,
+        direccion_envio2,
+        direccion_envio3
       ),
       origenes_factura (
         codigo,
@@ -2064,6 +2088,9 @@ function mostrarFacturaDesdeBD(payload) {
 let facturaCostosActual = null;
 
 async function abrirPanelCostosFactura(facturaId) {
+  
+  cerrarPanelEnvioFactura();
+  
   try {
     const payload = await obtenerFacturaCompletaConCostos(facturaId);
     facturaCostosActual = payload;
@@ -2366,6 +2393,202 @@ function cerrarPanelCostosFactura() {
   document.getElementById('costosFacturaTotales').classList.add('hidden');
   document.getElementById('costosFacturaEmpty').classList.remove('hidden');
   facturaCostosActual = null;
+}
+
+
+/* CARGA DE COSTOS POR ENVIO
+==================== */
+
+let facturaEnvioActual = null;
+
+async function abrirPanelEnvioFactura(facturaId) {
+  
+  cerrarPanelCostosFactura();
+
+  try {
+    const payload = await obtenerFacturaCompleta(facturaId);
+    facturaEnvioActual = payload;
+
+    renderPanelEnvioFactura(payload);
+
+    const panel = document.getElementById('envioFacturaPanel');
+    panel.classList.remove('hidden');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    console.error('Error abriendo panel de envío:', error);
+    alert(error.message || 'No fue posible abrir el registro de envío.');
+  }
+}
+
+function renderPanelEnvioFactura(payload) {
+  const factura = payload.factura;
+  const cliente = factura.clientes || {};
+
+  document.getElementById('envioFacturaResumen').textContent = [
+    `Factura: ${factura.factura_codigo || ''}`,
+    `Cliente: ${cliente.nombre || ''}`,
+    `Fecha: ${formatearFechaFactura(factura.fecha || '')}`
+  ].join(' | ');
+
+  document.getElementById('costoEnvioFactura').value =
+    Number(factura.costo_envio || 0);
+
+  document.getElementById('direccionEnvio1Factura').value =
+    cliente.direccion_envio1 || '';
+
+  document.getElementById('direccionEnvio2Factura').value =
+    cliente.direccion_envio2 || '';
+
+  document.getElementById('direccionEnvio3Factura').value =
+    cliente.direccion_envio3 || '';
+
+  document
+    .querySelectorAll('input[name="direccionEnvioSeleccionada"]')
+    .forEach(radio => {
+      radio.checked = false;
+    });
+}
+
+function obtenerDireccionEnvioSeleccionada() {
+  const radio = document.querySelector(
+    'input[name="direccionEnvioSeleccionada"]:checked'
+  );
+
+  if (!radio) {
+    return null;
+  }
+
+  return radio.value;
+}
+
+function obtenerDatosEnvioFormulario() {
+  const costoEnvio = redondear2(
+    parseFloat(document.getElementById('costoEnvioFactura').value || '0')
+  );
+
+  const direccion1 = normalizarTexto(
+    document.getElementById('direccionEnvio1Factura').value
+  );
+
+  const direccion2 = normalizarTexto(
+    document.getElementById('direccionEnvio2Factura').value
+  );
+
+  const direccion3 = normalizarTexto(
+    document.getElementById('direccionEnvio3Factura').value
+  );
+
+  const direccionSeleccionada = obtenerDireccionEnvioSeleccionada();
+
+  const mapaDirecciones = {
+    '1': direccion1,
+    '2': direccion2,
+    '3': direccion3
+  };
+
+  return {
+    costoEnvio,
+    direccion1,
+    direccion2,
+    direccion3,
+    direccionSeleccionada,
+    direccionValorSeleccionada: direccionSeleccionada
+      ? mapaDirecciones[direccionSeleccionada]
+      : ''
+  };
+}
+
+function validarDatosEnvioFormulario(data) {
+  const errores = [];
+
+  if (data.costoEnvio < 0) {
+    errores.push('El costo de envío no puede ser negativo.');
+  }
+
+  if (!data.direccionSeleccionada) {
+    errores.push('Debes seleccionar una dirección de envío.');
+  }
+
+  if (
+    data.direccionSeleccionada &&
+    !data.direccionValorSeleccionada
+  ) {
+    errores.push('La dirección seleccionada no puede estar vacía.');
+  }
+
+  return errores;
+}
+
+async function guardarEnvioFacturaActual() {
+  try {
+    if (!facturaEnvioActual?.factura?.id) {
+      throw new Error('No hay factura seleccionada para guardar envío.');
+    }
+
+    const factura = facturaEnvioActual.factura;
+    const cliente = factura.clientes || {};
+    const datos = obtenerDatosEnvioFormulario();
+    const errores = validarDatosEnvioFormulario(datos);
+
+    if (errores.length) {
+      alert(errores.join('\n'));
+      return;
+    }
+
+    const btn = document.getElementById('btnGuardarEnvioFactura');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const { error: errorCliente } = await supabaseClient
+      .from('clientes')
+      .update({
+        direccion_envio1: datos.direccion1 || null,
+        direccion_envio2: datos.direccion2 || null,
+        direccion_envio3: datos.direccion3 || null
+      })
+      .eq('id', cliente.id);
+
+    if (errorCliente) {
+      throw errorCliente;
+    }
+
+    const { error: errorFactura } = await supabaseClient
+      .from('facturas')
+      .update({
+        costo_envio: datos.costoEnvio
+      })
+      .eq('id', factura.id);
+
+    if (errorFactura) {
+      throw errorFactura;
+    }
+
+    alert('Registro de envío guardado correctamente.');
+    await abrirPanelEnvioFactura(factura.id);
+  } catch (error) {
+    console.error('Error guardando envío:', error);
+    alert(error.message || 'No fue posible guardar el registro de envío.');
+  } finally {
+    const btn = document.getElementById('btnGuardarEnvioFactura');
+    btn.disabled = false;
+    btn.textContent = 'Guardar envío';
+  }
+}
+
+function cerrarPanelEnvioFactura() {
+  document.getElementById('envioFacturaPanel').classList.add('hidden');
+  document.getElementById('costoEnvioFactura').value = 0;
+  document.getElementById('direccionEnvio1Factura').value = '';
+  document.getElementById('direccionEnvio2Factura').value = '';
+  document.getElementById('direccionEnvio3Factura').value = '';
+
+  document
+    .querySelectorAll('input[name="direccionEnvioSeleccionada"]')
+    .forEach(radio => {
+      radio.checked = false;
+    });
+
+  facturaEnvioActual = null;
 }
 
 
