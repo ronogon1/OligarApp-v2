@@ -1349,6 +1349,30 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   scroll-margin-top: 130px;
 }
 
+#tablaCostosFactura td:nth-child(3),
+#tablaCostosFactura th:nth-child(3) {
+  text-align: center;
+}
+
+#tablaCostosFactura td:nth-child(4),
+#tablaCostosFactura th:nth-child(4),
+#tablaCostosFactura td:nth-child(5),
+#tablaCostosFactura th:nth-child(5),
+#tablaCostosFactura td:nth-child(8),
+#tablaCostosFactura th:nth-child(8),
+#tablaCostosFactura td:nth-child(9),
+#tablaCostosFactura th:nth-child(9),
+#tablaCostosFactura td:nth-child(10),
+#tablaCostosFactura th:nth-child(10),
+#tablaCostosFactura td:nth-child(11),
+#tablaCostosFactura th:nth-child(11) {
+  text-align: right;
+}
+
+#tablaCostosFactura .cost-input {
+  text-align: right;
+}
+
 @media (max-width: 640px) {
   .cost-input {
     width: 100%;
