@@ -1900,7 +1900,14 @@ function renderTablaFacturas(facturas) {
       <td>C$ ${formatearMontoFactura(item.total_factura || 0)}</td>
       <td>C$ ${formatearMontoFactura(item.pagado || 0)}</td>
       <td>C$ ${formatearMontoFactura(item.saldo_pendiente || 0)}</td>
+      
       <td>${escapeHtml(item.estado_nombre || '')}</td>
+      <td class="status-icon-cell">
+        ${renderIndicadorCostos(item.estado_costos)}
+      </td>
+      <td class="status-icon-cell">
+        ${renderIndicadorEnvio(item.envio_registrado)}
+      </td>
       <td>
         <div class="table-actions-wrap">
           <button
@@ -1928,6 +1935,7 @@ function renderTablaFacturas(facturas) {
           </button>
         </div>
       </td>
+      
     `;
 
     body.appendChild(tr);
@@ -2082,6 +2090,56 @@ function mostrarFacturaDesdeBD(payload) {
     factura.clientes?.nombre || ''
   );
 }
+
+function renderIndicadorCostos(estadoCostos) {
+  switch (estadoCostos) {
+    case 'COM':
+      return `
+        <span
+          class="status-icon done"
+          title="Costos completos"
+          aria-label="Costos completos"
+        >
+          ✅
+        </span>
+      `;
+    case 'PAR':
+      return `
+        <span
+          class="status-icon partial"
+          title="Costos parciales"
+          aria-label="Costos parciales"
+        >
+          ⚠️
+        </span>
+      `;
+    default:
+      return `
+        <span
+          class="status-icon pending"
+          title="Costos pendientes"
+          aria-label="Costos pendientes"
+        >
+          ❌
+        </span>
+      `;
+  }
+}
+
+function renderIndicadorEnvio(valor) {
+  const activo = Boolean(valor);
+
+  return `
+    <span
+      class="status-icon ${activo ? 'done' : 'pending'}"
+      title="${activo ? 'Envío registrado' : 'Envío pendiente'}"
+      aria-label="${activo ? 'Envío registrado' : 'Envío pendiente'}"
+    >
+      ${activo ? '✅' : '❌'}
+    </span>
+  `;
+}
+
 
 /* CARGA DE COSTOS POR FACTURA-PRODUCTO
 ==================== */

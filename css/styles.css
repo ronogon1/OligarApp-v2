@@ -1329,6 +1329,30 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   white-space: nowrap;
 }
 
+.status-icon-cell {
+  text-align: center;
+}
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.status-icon.done {
+  color: #2e9b45;
+}
+
+.status-icon.pending {
+  color: #c62828;
+}
+
+.status-icon.partial {
+  color: #d38b00;
+}
+
 
 /* Estilo para la sección de costos */
 
