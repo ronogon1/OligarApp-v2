@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnBuscarClientes').addEventListener('click', buscarClientesGestion);
   document.getElementById('btnGuardarCliente').addEventListener('click', guardarClienteGestion);
   document.getElementById('btnLimpiarCliente').addEventListener('click', limpiarFormularioCliente);
-  document.getElementById('btnToggleEstadoCliente').addEventListener('click', toggleEstadoCliente);
 
   document.getElementById('btnBuscarProductos').addEventListener('click', buscarProductosGestion);
   document.getElementById('btnGuardarProducto').addEventListener('click', guardarProductoGestion);
