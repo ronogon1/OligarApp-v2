@@ -1398,3 +1398,37 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 #envioFacturaPanel .checkbox-inline {
   margin-bottom: 8px;
 }
+
+#envioFacturaResumen {
+  font-size: 1.05rem;
+  margin-top: 10px;
+}
+
+#costoEnvioFactura {
+  max-width: 220px;
+  text-align: right;
+}
+
+.envio-direccion-item {
+  margin-bottom: 18px;
+}
+
+.envio-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mauve-bark);
+}
+
+.envio-radio-label input[type="radio"] {
+  margin: 0;
+}
+
+#envioFacturaPanel input[type="text"]:disabled {
+  background: #f6f2ef;
+  color: #9a8b81;
+  cursor: not-allowed;
+}

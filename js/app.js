@@ -1972,6 +1972,7 @@ async function obtenerFacturaCompleta(facturaId) {
       subtotal_factura,
       envio,
       costo_envio,
+      direccion_entrega,
       desc_global,
       total_factura,
       pagado,
@@ -2447,6 +2448,32 @@ function renderPanelEnvioFactura(payload) {
     .forEach(radio => {
       radio.checked = false;
     });
+
+  const direccionEntrega = normalizarTexto(factura.direccion_entrega || '');
+
+  if (direccionEntrega) {
+    const direccion1 = normalizarTexto(cliente.direccion_envio1 || '');
+    const direccion2 = normalizarTexto(cliente.direccion_envio2 || '');
+    const direccion3 = normalizarTexto(cliente.direccion_envio3 || '');
+
+    if (direccionEntrega === direccion1 && direccion1) {
+      document.querySelector(
+        'input[name="direccionEnvioSeleccionada"][value="1"]'
+      ).checked = true;
+    } else if (direccionEntrega === direccion2 && direccion2) {
+      document.querySelector(
+        'input[name="direccionEnvioSeleccionada"][value="2"]'
+      ).checked = true;
+    } else if (direccionEntrega === direccion3 && direccion3) {
+      document.querySelector(
+        'input[name="direccionEnvioSeleccionada"][value="3"]'
+      ).checked = true;
+    }
+  }
+
+  bloquearCamposDireccionEnvio();
+  habilitarSoloDireccionSeleccionada();
+  activarCambioDireccionEnvio();
 }
 
 function obtenerDireccionEnvioSeleccionada() {
@@ -2555,7 +2582,8 @@ async function guardarEnvioFacturaActual() {
     const { error: errorFactura } = await supabaseClient
       .from('facturas')
       .update({
-        costo_envio: datos.costoEnvio
+        costo_envio: datos.costoEnvio,
+        direccion_entrega: datos.direccionValorSeleccionada || null
       })
       .eq('id', factura.id);
 
@@ -2588,7 +2616,38 @@ function cerrarPanelEnvioFactura() {
       radio.checked = false;
     });
 
+  bloquearCamposDireccionEnvio();
   facturaEnvioActual = null;
+}
+
+function bloquearCamposDireccionEnvio() {
+  ['1', '2', '3'].forEach(numero => {
+    const input = document.getElementById(`direccionEnvio${numero}Factura`);
+    if (input) {
+      input.disabled = true;
+    }
+  });
+}
+
+function habilitarSoloDireccionSeleccionada() {
+  const seleccionada = obtenerDireccionEnvioSeleccionada();
+
+  ['1', '2', '3'].forEach(numero => {
+    const input = document.getElementById(`direccionEnvio${numero}Factura`);
+    if (!input) return;
+
+    input.disabled = numero !== seleccionada;
+  });
+}
+
+function activarCambioDireccionEnvio() {
+  document
+    .querySelectorAll('input[name="direccionEnvioSeleccionada"]')
+    .forEach(radio => {
+      radio.addEventListener('change', () => {
+        habilitarSoloDireccionSeleccionada();
+      });
+    });
 }
 
 
