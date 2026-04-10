@@ -1413,12 +1413,20 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   margin-bottom: 18px;
 }
 
+.envio-direccion-item input[type="text"] {
+  width: 100%;
+}
+
+.envio-direccion-item input[type="text"]:not(:disabled) {
+  border: 2px solid var(--deep-lilac);
+  background: #fff;
+}
+
 .envio-radio-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  font-size: 15px;
+  gap: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
   color: var(--mauve-bark);
 }
