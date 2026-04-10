@@ -89,6 +89,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     ?.addEventListener('click', cerrarPanelEdicionFactura);
   document.getElementById('btnGuardarCambiosFactura')
     ?.addEventListener('click', guardarCambiosFactura);
+  
+  document.getElementById('btnNuevoCliente')
+    ?.addEventListener('click', () => {
+      limpiarFormularioCliente();
+      mostrarFormularioCliente();
+    });
+  document.getElementById('btnNuevoProducto')
+    ?.addEventListener('click', () => {
+      limpiarFormularioProducto();
+      mostrarFormularioProducto();
+    });
 
   configurarMenuMovil();
   configurarOrigenVenta();
@@ -3591,9 +3602,12 @@ function limpiarFormularioCliente() {
 
   document.getElementById('clienteFormTitulo').textContent = 'Nuevo cliente';
 
+  /*
   const btnToggle = document.getElementById('btnToggleEstadoCliente');
   btnToggle.classList.add('hidden');
   btnToggle.textContent = 'Cambiar a inactivo';
+  */
+
 }
 
 function obtenerDatosFormularioCliente() {
@@ -3758,11 +3772,16 @@ async function cargarClienteEnFormulario(clienteId) {
 
     document.getElementById('clienteFormTitulo').textContent = 'Editar cliente';
 
+    /*
     const btnToggle = document.getElementById('btnToggleEstadoCliente');
     btnToggle.classList.remove('hidden');
     btnToggle.textContent = data.activo
       ? 'Cambiar a inactivo'
       : 'Cambiar a activo';
+    */
+  
+  mostrarFormularioCliente();
+  
   } catch (error) {
     console.error('Error cargando cliente:', error);
     alert(error.message || 'No fue posible cargar el cliente.');
@@ -3824,6 +3843,7 @@ async function guardarClienteGestion() {
     }
 
     limpiarFormularioCliente();
+    ocultarFormularioCliente();
     await buscarClientesGestion();
   } catch (error) {
     console.error('Error guardando cliente:', error);
@@ -3877,6 +3897,16 @@ async function toggleEstadoCliente() {
   }
 }
 */
+
+function mostrarFormularioCliente() {
+  document.getElementById('clienteFormPanel')?.classList.remove('hidden');
+  document.getElementById('clienteFormPanel')
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function ocultarFormularioCliente() {
+  document.getElementById('clienteFormPanel')?.classList.add('hidden');
+}
 
 
 /* GESTIÓN DE PRODUCTOS
@@ -4210,6 +4240,9 @@ async function cargarProductoEnFormulario(productoId) {
     console.error('Error cargando producto:', error);
     alert(error.message || 'No fue posible cargar el producto.');
   }
+
+  mostrarFormularioProducto();
+
 }
 
 async function guardarProductoGestion() {
@@ -4293,11 +4326,22 @@ async function guardarProductoGestion() {
     }
 
     limpiarFormularioProducto();
+    ocultarFormularioProducto();
     await buscarProductosGestion();
   } catch (error) {
     console.error('Error guardando producto:', error);
     alert(error.message || 'Ocurrió un error al guardar el producto.');
   }
+}
+
+function mostrarFormularioProducto() {
+  document.getElementById('productoFormPanel')?.classList.remove('hidden');
+  document.getElementById('productoFormPanel')
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function ocultarFormularioProducto() {
+  document.getElementById('productoFormPanel')?.classList.add('hidden');
 }
 
 

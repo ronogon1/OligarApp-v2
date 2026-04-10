@@ -630,6 +630,11 @@
                 Consulta, registra y actualiza la información de clientes.
               </p>
             </div>
+
+            <button type="button" id="btnNuevoCliente" class="btn-secondary">
+              + Nuevo cliente
+            </button>
+
           </div>
 
           <div class="module-subcard">
@@ -673,6 +678,7 @@
                 Buscar clientes
               </button>
             </div>
+
           </div>
 
           <div class="module-subcard">
@@ -699,7 +705,7 @@
             </div>
           </div>
 
-          <div class="module-subcard">
+          <div id="clienteFormPanel" class="module-subcard" hidden>
             <div class="module-header module-header-flex">
               <div>
                 <h3 id="clienteFormTitulo">Nuevo cliente</h3>
@@ -800,12 +806,18 @@
       <section id="productosView" class="app-section">
         <section class="module-card">
           <div class="module-header module-header-flex">
+            
             <div>
               <h2>Productos</h2>
               <p class="helper-text">
-                Consulta, registra y actualiza la información base de los productos.
+                Consulta, registra y actualiza información de productos.
               </p>
             </div>
+
+            <button type="button" id="btnNuevoProducto" class="btn-secondary">
+              + Nuevo producto
+            </button>
+            
           </div>
 
           <div class="module-subcard">
@@ -875,7 +887,7 @@
             </div>
           </div>
 
-          <div class="module-subcard">
+          <div id="productoFormPanel" class="module-subcard" hidden>
             <div class="module-header module-header-flex">
               <div>
                 <h3 id="productoFormTitulo">Nuevo producto</h3>
