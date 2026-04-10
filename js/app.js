@@ -78,12 +78,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       agregarFilaPagoEdicion();
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('envioEdicionFactura')
-        ?.addEventListener('input', recalcularResumenEdicionFactura);
-      document.getElementById('descEdicionFactura')
-        ?.addEventListener('input', recalcularResumenEdicionFactura);
-    });
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('envioEdicionFactura')
+      ?.addEventListener('input', recalcularResumenEdicionFactura);
+    document.getElementById('descEdicionFactura')
+      ?.addEventListener('input', recalcularResumenEdicionFactura);
+  });
+
+  document.getElementById('btnCerrarEdicionFactura')
+    ?.addEventListener('click', cerrarPanelEdicionFactura);
+  document.getElementById('btnGuardarCambiosFactura')
+    ?.addEventListener('click', guardarCambiosFactura);
 
   configurarMenuMovil();
   configurarOrigenVenta();
@@ -1232,7 +1237,7 @@ function generarCodigoPago(index) {
   const random = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `PAG-${fecha}-${hora}-${sufijo}-${random}`;
 }
-  */
+*/
 
 async function cargarCatalogosVenta() {
   if (
@@ -1958,7 +1963,7 @@ function renderTablaFacturas(facturas) {
             class="table-action-btn btn-editar-factura"
             data-factura-id="${item.id}"
           >
-            ✏️Editar
+            ✏️ Editar
           </button>
 
         </div>
@@ -2491,6 +2496,514 @@ function recalcularResumenEdicionFactura() {
 
   document.getElementById('saldoEdicionResumen').textContent =
     `C$ ${formatearMontoFactura(saldo)}`;
+}
+
+function cerrarPanelEdicionFactura() {
+  document.getElementById('edicionFacturaPanel').classList.add('hidden');
+  document.getElementById('edicionFacturaId').value = '';
+  document.getElementById('edicionFacturaClienteIdOriginal').value = '';
+  document.getElementById('edicionFacturaTitulo').textContent =
+    'Edición de factura';
+  document.getElementById('edicionFacturaResumen').textContent =
+    'Selecciona una factura para editarla.';
+
+  document.getElementById('clienteEdicionFactura').value = '';
+  document.getElementById('fechaEdicionFactura').value = '';
+  document.getElementById('envioEdicionFactura').value = 0;
+  document.getElementById('descEdicionFactura').value = 0;
+
+  document.getElementById('productosEdicionContainer').innerHTML = '';
+  document.getElementById('pagosEdicionContainer').innerHTML = '';
+
+  document.getElementById('subtotalEdicionResumen').textContent = 'C$ 0.00';
+  document.getElementById('totalEdicionResumen').textContent = 'C$ 0.00';
+  document.getElementById('pagadoEdicionResumen').textContent = 'C$ 0.00';
+  document.getElementById('saldoEdicionResumen').textContent = 'C$ 0.00';
+
+  document.querySelectorAll('.edicion-origin-btn').forEach(btn => {
+    btn.classList.remove('active-origin');
+  });
+
+  facturaEdicionActual = null;
+  selectedClienteEdicion = null;
+}
+
+async function obtenerCostosFacturaMap(facturaId) {
+  const { data, error } = await supabaseClient
+    .from('costos_producto')
+    .select(`
+      id,
+      factura_id,
+      detalle_factura_id,
+      producto_id,
+      cantidad,
+      mo_unitario,
+      materiales_unitario,
+      costo_unitario,
+      total_mo,
+      total_materiales,
+      total_costo,
+      observacion
+    `)
+    .eq('factura_id', facturaId);
+
+  if (error) throw error;
+
+  const map = new Map();
+
+  (data || []).forEach(item => {
+    if (item.producto_id) {
+      map.set(item.producto_id, item);
+    }
+  });
+
+  return map;
+}
+
+function obtenerProductosEdicionFormulario() {
+  const rows = [...document.querySelectorAll(
+    '#productosEdicionContainer .producto-row'
+  )];
+
+  return rows.map((row, index) => {
+    const nombre = normalizarTexto(
+      row.querySelector('.producto-nombre').value
+    );
+
+    const cantidad = redondear2(parseFloat(
+      row.querySelector('.producto-cantidad').value || '0'
+    ));
+
+    const precioUnit = redondear2(parseFloat(
+      row.querySelector('.producto-precio').value || '0'
+    ));
+
+    const descuento = redondear2(parseFloat(
+      row.querySelector('.producto-desc').value || '0'
+    ));
+
+    let subtotal = cantidad * precioUnit - descuento;
+    if (subtotal < 0) subtotal = 0;
+    subtotal = redondear2(subtotal);
+
+    return {
+      index: index + 1,
+      row,
+      detalleFacturaIdOriginal: row.dataset.detalleOriginal || '',
+      productoId: row.dataset.productoId || '',
+      nombre,
+      cantidad,
+      precioUnit,
+      descuento,
+      subtotal
+    };
+  });
+}
+
+function obtenerPagosEdicionFormulario() {
+  const rows = [...document.querySelectorAll(
+    '#pagosEdicionContainer .pago-row'
+  )];
+
+  return rows.map((row, index) => {
+    const fecha = row.querySelector('.pago-fecha').value;
+    const monto = redondear2(parseFloat(
+      row.querySelector('.pago-monto').value || '0'
+    ));
+    const metodo = normalizarTexto(
+      row.querySelector('.pago-metodo').value
+    );
+
+    return {
+      index: index + 1,
+      fecha,
+      monto,
+      metodo,
+      nota: null
+    };
+  });
+}
+
+function obtenerDatosEdicionFacturaFormulario() {
+  const clienteNombre = normalizarTexto(
+    document.getElementById('clienteEdicionFactura').value
+  );
+
+  const fechaVenta = document.getElementById('fechaEdicionFactura').value;
+  const origenCodigo = obtenerOrigenEdicionActivo();
+  const envio = redondear2(parseFloat(
+    document.getElementById('envioEdicionFactura').value || '0'
+  ));
+  const descGlobal = redondear2(parseFloat(
+    document.getElementById('descEdicionFactura').value || '0'
+  ));
+
+  const productos = obtenerProductosEdicionFormulario();
+  const pagos = obtenerPagosEdicionFormulario();
+
+  const subtotalFactura = redondear2(
+    productos.reduce((acc, item) => acc + item.subtotal, 0)
+  );
+
+  const totalFactura = redondear2(
+    Math.max(subtotalFactura + envio - descGlobal, 0)
+  );
+
+  const pagado = redondear2(
+    pagos.reduce((acc, item) => acc + item.monto, 0)
+  );
+
+  const saldoPendiente = redondear2(
+    Math.max(totalFactura - pagado, 0)
+  );
+
+  return {
+    clienteNombre,
+    fechaVenta,
+    origenCodigo,
+    envio,
+    descGlobal,
+    subtotalFactura,
+    totalFactura,
+    pagado,
+    saldoPendiente,
+    productos,
+    pagos
+  };
+}
+
+function validarDatosEdicionFactura(data) {
+  const errores = [];
+
+  if (!data.clienteNombre) {
+    errores.push('Debes ingresar el nombre del cliente.');
+  }
+
+  if (!data.fechaVenta) {
+    errores.push('Debes indicar la fecha de la factura.');
+  }
+
+  if (!data.origenCodigo) {
+    errores.push('Debes seleccionar el origen.');
+  }
+
+  const productosValidos = data.productos.filter(item => item.nombre);
+  if (!productosValidos.length) {
+    errores.push('Debes ingresar al menos un producto.');
+  }
+
+  const productoIds = new Set();
+
+  data.productos.forEach(item => {
+    if (!item.nombre && (item.cantidad > 0 || item.precioUnit > 0 || item.descuento > 0)) {
+      errores.push(`El producto ${item.index} tiene datos pero no tiene nombre.`);
+    }
+
+    if (item.nombre && item.cantidad <= 0) {
+      errores.push(`La cantidad del producto ${item.index} debe ser mayor que cero.`);
+    }
+
+    if (item.nombre && item.precioUnit < 0) {
+      errores.push(`El precio del producto ${item.index} no puede ser negativo.`);
+    }
+
+    if (item.nombre && item.descuento < 0) {
+      errores.push(`El descuento del producto ${item.index} no puede ser negativo.`);
+    }
+
+    if (item.nombre && item.descuento > (item.cantidad * item.precioUnit)) {
+      errores.push(`El descuento del producto ${item.index} no puede ser mayor que su importe.`);
+    }
+
+    if (item.productoId) {
+      if (productoIds.has(item.productoId)) {
+        errores.push(`No se puede repetir el mismo producto en la factura.`);
+      }
+      productoIds.add(item.productoId);
+    }
+  });
+
+  data.pagos.forEach(item => {
+    const tieneAlgo = item.fecha || item.monto > 0 || item.metodo;
+    if (!tieneAlgo) return;
+
+    if (!item.fecha) {
+      errores.push(`El pago ${item.index} debe tener fecha.`);
+    }
+
+    if (item.monto <= 0) {
+      errores.push(`El pago ${item.index} debe tener un monto mayor que cero.`);
+    }
+
+    if (!item.metodo) {
+      errores.push(`El pago ${item.index} debe tener método de pago.`);
+    }
+  });
+
+  if (data.envio < 0) {
+    errores.push('El envío cobrado no puede ser negativo.');
+  }
+
+  if (data.descGlobal < 0) {
+    errores.push('El descuento global no puede ser negativo.');
+  }
+
+  if (data.pagado > data.totalFactura) {
+    errores.push('El total pagado no puede ser mayor que el total de la factura.');
+  }
+
+  return errores;
+}
+
+async function actualizarFacturaEncabezado(facturaId, data, clienteId) {
+  const origenFacturaId = ventaCatalogos.origenes[data.origenCodigo];
+
+  if (!origenFacturaId) {
+    throw new Error(`No se encontró el origen ${data.origenCodigo}.`);
+  }
+
+  const updatePayload = {
+    fecha: data.fechaVenta,
+    cliente_id: clienteId,
+    subtotal_factura: data.subtotalFactura,
+    envio: data.envio,
+    desc_global: data.descGlobal,
+    total_factura: data.totalFactura,
+    pagado: data.pagado,
+    origen_factura_id: origenFacturaId
+  };
+
+  const clienteOriginalId = document.getElementById(
+    'edicionFacturaClienteIdOriginal'
+  ).value;
+
+  if (clienteOriginalId && clienteOriginalId !== clienteId) {
+    updatePayload.costo_envio = null;
+    updatePayload.direccion_entrega = null;
+  }
+
+  const { error } = await supabaseClient
+    .from('facturas')
+    .update(updatePayload)
+    .eq('id', facturaId);
+
+  if (error) throw error;
+}
+
+async function reemplazarPagosFacturaEdicion(facturaId, clienteId, pagos) {
+  const { error: deleteError } = await supabaseClient
+    .from('pagos_factura')
+    .delete()
+    .eq('factura_id', facturaId);
+
+  if (deleteError) throw deleteError;
+
+  await insertarPagosFactura(facturaId, clienteId, pagos);
+}
+
+async function reemplazarDetalleYCostosEdicion(
+  facturaId,
+  productos,
+  origenCodigo
+) {
+  const costosPreviosMap = await obtenerCostosFacturaMap(facturaId);
+
+  const { data: detallesPrevios, error: errorPrevios } = await supabaseClient
+    .from('detalle_factura')
+    .select(`
+      id,
+      factura_id,
+      producto_id,
+      cantidad,
+      precio_unit,
+      desc_prod,
+      subtotal,
+      imagen_producto
+    `)
+    .eq('factura_id', facturaId);
+
+  if (errorPrevios) throw errorPrevios;
+
+  const imagenesPreviasMap = new Map();
+  (detallesPrevios || []).forEach(item => {
+    if (item.producto_id) {
+      imagenesPreviasMap.set(item.producto_id, item.imagen_producto || null);
+    }
+  });
+
+  const { error: deleteCostosError } = await supabaseClient
+    .from('costos_producto')
+    .delete()
+    .eq('factura_id', facturaId);
+
+  if (deleteCostosError) throw deleteCostosError;
+
+  const { error: deleteDetallesError } = await supabaseClient
+    .from('detalle_factura')
+    .delete()
+    .eq('factura_id', facturaId);
+
+  if (deleteDetallesError) throw deleteDetallesError;
+
+  const detallesInsert = [];
+
+  for (const item of productos) {
+    if (!item.nombre) continue;
+
+    const producto = await obtenerProductoId(item, origenCodigo);
+
+    let imagenProducto = imagenesPreviasMap.get(producto.id) || null;
+
+    if (!imagenProducto) {
+      imagenProducto = await sincronizarImagenProducto(item, producto);
+    }
+
+    detallesInsert.push({
+      factura_id: facturaId,
+      producto_id: producto.id,
+      cantidad: item.cantidad,
+      precio_unit: item.precioUnit,
+      desc_prod: item.descuento,
+      subtotal: item.subtotal,
+      imagen_producto: imagenProducto || null
+    });
+
+    item.productoId = producto.id;
+    item.productoCodigo = producto.producto_codigo || '';
+    item.imagenUrl = imagenProducto || producto.imagen_url || '';
+  }
+
+  if (!detallesInsert.length) {
+    return;
+  }
+
+  const { data: detallesNuevos, error: insertDetallesError } = await supabaseClient
+    .from('detalle_factura')
+    .insert(detallesInsert)
+    .select(`
+      id,
+      factura_id,
+      producto_id,
+      cantidad,
+      precio_unit,
+      desc_prod,
+      subtotal,
+      imagen_producto
+    `);
+
+  if (insertDetallesError) throw insertDetallesError;
+
+  const costosInsert = [];
+
+  (detallesNuevos || []).forEach(detalleNuevo => {
+    const costoPrevio = costosPreviosMap.get(detalleNuevo.producto_id);
+
+    if (!costoPrevio) return;
+
+    const cantidad = Number(detalleNuevo.cantidad || 0);
+    const moUnit = Number(costoPrevio.mo_unitario || 0);
+    const materialesUnit = Number(costoPrevio.materiales_unitario || 0);
+    const costoUnit = redondear2(moUnit + materialesUnit);
+    const totalMo = redondear2(cantidad * moUnit);
+    const totalMateriales = redondear2(cantidad * materialesUnit);
+    const totalCosto = redondear2(cantidad * costoUnit);
+
+    costosInsert.push({
+      factura_id: facturaId,
+      detalle_factura_id: detalleNuevo.id,
+      producto_id: detalleNuevo.producto_id,
+      cantidad,
+      mo_unitario: moUnit,
+      materiales_unitario: materialesUnit,
+      costo_unitario: costoUnit,
+      total_mo: totalMo,
+      total_materiales: totalMateriales,
+      total_costo: totalCosto,
+      observacion: costoPrevio.observacion || null
+    });
+  });
+
+  if (costosInsert.length) {
+    const { error: insertCostosError } = await supabaseClient
+      .from('costos_producto')
+      .insert(costosInsert);
+
+    if (insertCostosError) throw insertCostosError;
+  }
+}
+
+async function guardarCambiosFactura() {
+  try {
+    if (!facturaEdicionActual?.factura?.id) {
+      throw new Error('No hay una factura cargada para editar.');
+    }
+
+    setEstadoBotonGuardarEdicion(true);
+    await cargarCatalogosVenta();
+
+    const facturaId = facturaEdicionActual.factura.id;
+    const data = obtenerDatosEdicionFacturaFormulario();
+    const errores = validarDatosEdicionFactura(data);
+
+    if (errores.length) {
+      alert(errores.join('\n'));
+      return;
+    }
+
+    const clienteId = await obtenerClienteIdEdicion(data.clienteNombre);
+
+    await actualizarFacturaEncabezado(facturaId, data, clienteId);
+    await reemplazarDetalleYCostosEdicion(
+      facturaId,
+      data.productos,
+      data.origenCodigo
+    );
+    await reemplazarPagosFacturaEdicion(facturaId, clienteId, data.pagos);
+
+    alert('Factura editada correctamente.');
+    await buscarFacturas();
+    await abrirPanelEdicionFactura(facturaId);
+  } catch (error) {
+    console.error('Error guardando cambios de factura:', error);
+    alert(error.message || 'No fue posible guardar los cambios de la factura.');
+  } finally {
+    setEstadoBotonGuardarEdicion(false);
+  }
+}
+
+async function obtenerClienteIdEdicion(clienteNombre) {
+  if (
+    selectedClienteEdicion &&
+    normalizarTexto(selectedClienteEdicion.nombre).toLowerCase() ===
+      clienteNombre.toLowerCase()
+  ) {
+    return selectedClienteEdicion.id;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('clientes')
+    .select('id, nombre, cliente_codigo')
+    .ilike('nombre', clienteNombre)
+    .limit(1);
+
+  if (error) throw error;
+
+  if (data && data.length) {
+    selectedClienteEdicion = data[0];
+    return data[0].id;
+  }
+
+  const clienteNuevo = await crearClienteNuevo(clienteNombre);
+  selectedClienteEdicion = clienteNuevo;
+  return clienteNuevo.id;
+}
+
+function setEstadoBotonGuardarEdicion(guardando) {
+  const btn = document.getElementById('btnGuardarCambiosFactura');
+  if (!btn) return;
+
+  btn.disabled = guardando;
+  btn.textContent = guardando ? 'Guardando...' : 'Guardar cambios';
 }
 
 
