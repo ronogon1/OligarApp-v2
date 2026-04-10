@@ -65,9 +65,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     ?.addEventListener('click', cerrarPanelCostosFactura);
   
   document.getElementById('btnGuardarEnvioFactura')
-  ?.addEventListener('click', guardarEnvioFacturaActual);
+    ?.addEventListener('click', guardarEnvioFacturaActual);
   document.getElementById('btnCerrarEnvioFactura')
     ?.addEventListener('click', cerrarPanelEnvioFactura);
+
+  document.getElementById('btnAddProductoEdicion')
+    .addEventListener('click', () => {
+      agregarFilaProductoEdicion();
+    });
+  document.getElementById('btnAddPagoEdicion')
+    .addEventListener('click', () => {
+      agregarFilaPagoEdicion();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('envioEdicionFactura')
+        ?.addEventListener('input', recalcularResumenEdicionFactura);
+      document.getElementById('descEdicionFactura')
+        ?.addEventListener('input', recalcularResumenEdicionFactura);
+    });
 
   configurarMenuMovil();
   configurarOrigenVenta();
@@ -1673,6 +1689,9 @@ async function guardarVentaDesdeFormulario() {
 /* GESTIÓN FACTURAS
 ========================= */
 
+let facturaEdicionActual = null;
+let selectedClienteEdicion = null;
+
 function mostrarFactura(data, factura, clienteNombre) {
   const modal = document.getElementById('facturaModal');
 
@@ -1909,12 +1928,21 @@ function renderTablaFacturas(facturas) {
       </td>
       <td>
         <div class="table-actions-wrap">
+        
           <button
             type="button"
             class="table-action-btn btn-ver-factura"
             data-factura-id="${item.id}"
           >
             Ver / Reimprimir
+          </button>
+
+          <button
+            type="button"
+            class="table-action-btn btn-editar-factura"
+            data-factura-id="${item.id}"
+          >
+            🟡Editar
           </button>
 
           <button
@@ -1942,6 +1970,12 @@ function renderTablaFacturas(facturas) {
   body.querySelectorAll('.btn-ver-factura').forEach(btn => {
     btn.addEventListener('click', () => {
       abrirFacturaGuardada(btn.dataset.facturaId);
+    });
+  });
+
+  body.querySelectorAll('.btn-editar-factura').forEach(btn => {
+    btn.addEventListener('click', () => {
+      abrirPanelEdicionFactura(btn.dataset.facturaId);
     });
   });
 
@@ -2136,6 +2170,294 @@ function renderIndicadorEnvio(valor) {
       ${activo ? '✅' : '❌'}
     </span>
   `;
+}
+
+
+/* EDICIÓN DE FACTURAS
+==================== */
+
+async function abrirPanelEdicionFactura(facturaId) {
+  cerrarPanelCostosFactura();
+  cerrarPanelEnvioFactura();
+
+  try {
+    const payload = await obtenerFacturaCompleta(facturaId);
+    facturaEdicionActual = payload;
+
+    renderPanelEdicionFactura(payload);
+
+    const panel = document.getElementById('edicionFacturaPanel');
+    panel.classList.remove('hidden');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    console.error('Error abriendo edición de factura:', error);
+    alert(error.message || 'No fue posible abrir la edición de la factura.');
+  }
+}
+
+function renderPanelEdicionFactura(payload) {
+  const factura = payload.factura;
+  const detalles = payload.detalles || [];
+  const pagos = payload.pagos || [];
+
+  document.getElementById('edicionFacturaId').value = factura.id || '';
+  document.getElementById('edicionFacturaClienteIdOriginal').value =
+    factura.clientes?.id || '';
+
+  document.getElementById('edicionFacturaTitulo').textContent =
+    `Edición de factura | ${factura.factura_codigo || ''}`;
+
+  document.getElementById('edicionFacturaResumen').textContent = [
+    `Factura: ${factura.factura_codigo || ''}`,
+    `Cliente: ${factura.clientes?.nombre || ''}`,
+    `Fecha: ${formatearFechaFactura(factura.fecha || '')}`
+  ].join(' | ');
+
+  document.getElementById('clienteEdicionFactura').value =
+    factura.clientes?.nombre || '';
+
+  document.getElementById('fechaEdicionFactura').value = factura.fecha || '';
+
+  document.getElementById('envioEdicionFactura').value =
+    Number(factura.envio || 0);
+
+  document.getElementById('descEdicionFactura').value =
+    Number(factura.desc_global || 0);
+
+  selectedClienteEdicion = factura.clientes
+    ? {
+        id: factura.clientes.id,
+        nombre: factura.clientes.nombre || ''
+      }
+    : null;
+
+  setOrigenEdicionActivo(factura.origenes_factura?.codigo || '');
+
+  renderProductosEdicion(detalles);
+  renderPagosEdicion(pagos);
+  recalcularResumenEdicionFactura();
+}
+
+function setOrigenEdicionActivo(origenCodigo) {
+  document.querySelectorAll('.edicion-origin-btn').forEach(btn => {
+    btn.classList.toggle('active-origin', btn.dataset.origin === origenCodigo);
+  });
+}
+
+function obtenerOrigenEdicionActivo() {
+  const btn = document.querySelector('.edicion-origin-btn.active-origin');
+  return btn ? btn.dataset.origin : '';
+}
+
+function renderProductosEdicion(detalles) {
+  const container = document.getElementById('productosEdicionContainer');
+  container.innerHTML = '';
+
+  detalles.forEach((item, index) => {
+    agregarFilaProductoEdicion({
+      productoId: item.productos?.id || '',
+      productoCodigo: item.productos?.producto_codigo || '',
+      nombre: item.productos?.nombre || '',
+      cantidad: Number(item.cantidad || 0),
+      precioUnit: Number(item.precio_unit || 0),
+      descuento: Number(item.desc_prod || 0),
+      subtotal: Number(item.subtotal || 0),
+      imagenUrl: item.imagen_producto || item.productos?.imagen_url || '',
+      detalleFacturaIdOriginal: item.id || ''
+    }, index + 1);
+  });
+}
+
+function renderPagosEdicion(pagos) {
+  const container = document.getElementById('pagosEdicionContainer');
+  container.innerHTML = '';
+
+  pagos.forEach((item, index) => {
+    agregarFilaPagoEdicion({
+      fecha: item.fecha || '',
+      monto: Number(item.monto || 0),
+      metodo: item.metodos_pago?.nombre || '',
+      nota: item.nota || ''
+    }, index + 1);
+  });
+}
+
+function agregarFilaProductoEdicion(data = {}, index = null) {
+  const container = document.getElementById('productosEdicionContainer');
+
+  const row = document.createElement('div');
+  row.className = 'producto-row';
+
+  row.dataset.productoId = data.productoId || '';
+  row.dataset.detalleOriginal = data.detalleFacturaIdOriginal || '';
+
+  row.innerHTML = `
+    <div class="producto-grid">
+      <input
+        type="text"
+        class="producto-nombre"
+        placeholder="Producto"
+        value="${data.nombre || ''}"
+      >
+
+      <input
+        type="number"
+        class="producto-cantidad"
+        min="1"
+        value="${data.cantidad || 1}"
+      >
+
+      <input
+        type="number"
+        class="producto-precio"
+        min="0"
+        step="0.01"
+        value="${data.precioUnit || 0}"
+      >
+
+      <input
+        type="number"
+        class="producto-desc"
+        min="0"
+        step="0.01"
+        value="${data.descuento || 0}"
+      >
+
+      <span class="producto-subtotal">
+        C$ ${formatearMontoFactura(data.subtotal || 0)}
+      </span>
+
+      <button type="button" class="btn-remove">✕</button>
+    </div>
+  `;
+
+  container.appendChild(row);
+
+  // Eventos
+  row.querySelector('.producto-cantidad')
+    .addEventListener('input', () => recalcularFilaProductoEdicion(row));
+
+  row.querySelector('.producto-precio')
+    .addEventListener('input', () => recalcularFilaProductoEdicion(row));
+
+  row.querySelector('.producto-desc')
+    .addEventListener('input', () => recalcularFilaProductoEdicion(row));
+
+  row.querySelector('.btn-remove')
+    .addEventListener('click', () => {
+      row.remove();
+      recalcularResumenEdicionFactura();
+    });
+
+  recalcularFilaProductoEdicion(row);
+}
+
+function recalcularFilaProductoEdicion(row) {
+  const cantidad = Number(
+    row.querySelector('.producto-cantidad').value || 0
+  );
+
+  const precio = Number(
+    row.querySelector('.producto-precio').value || 0
+  );
+
+  const descuento = Number(
+    row.querySelector('.producto-desc').value || 0
+  );
+
+  let subtotal = cantidad * precio - descuento;
+
+  if (subtotal < 0) subtotal = 0;
+
+  row.querySelector('.producto-subtotal').textContent =
+    `C$ ${formatearMontoFactura(subtotal)}`;
+
+  recalcularResumenEdicionFactura();
+}
+
+function agregarFilaPagoEdicion(data = {}, index = null) {
+  const container = document.getElementById('pagosEdicionContainer');
+
+  const row = document.createElement('div');
+  row.className = 'pago-row';
+
+  row.innerHTML = `
+    <div class="pago-grid">
+      <input type="date" class="pago-fecha" value="${data.fecha || ''}">
+
+      <input
+        type="number"
+        class="pago-monto"
+        min="0"
+        step="0.01"
+        value="${data.monto || 0}"
+      >
+
+      <input
+        type="text"
+        class="pago-metodo"
+        placeholder="Método"
+        value="${data.metodo || ''}"
+      >
+
+      <button type="button" class="btn-remove">✕</button>
+    </div>
+  `;
+
+  container.appendChild(row);
+
+  row.querySelector('.pago-monto')
+    .addEventListener('input', recalcularResumenEdicionFactura);
+
+  row.querySelector('.btn-remove')
+    .addEventListener('click', () => {
+      row.remove();
+      recalcularResumenEdicionFactura();
+    });
+}
+
+function recalcularResumenEdicionFactura() {
+  const filas = document.querySelectorAll('#productosEdicionContainer .producto-row');
+
+  let subtotal = 0;
+
+  filas.forEach(row => {
+    const cantidad = Number(row.querySelector('.producto-cantidad').value || 0);
+    const precio = Number(row.querySelector('.producto-precio').value || 0);
+    const descuento = Number(row.querySelector('.producto-desc').value || 0);
+
+    let sub = cantidad * precio - descuento;
+    if (sub < 0) sub = 0;
+
+    subtotal += sub;
+  });
+
+  const envio = Number(document.getElementById('envioEdicionFactura').value || 0);
+  const descGlobal = Number(document.getElementById('descEdicionFactura').value || 0);
+
+  let total = subtotal + envio - descGlobal;
+  if (total < 0) total = 0;
+
+  // pagos
+  let pagado = 0;
+  document.querySelectorAll('#pagosEdicionContainer .pago-monto')
+    .forEach(input => {
+      pagado += Number(input.value || 0);
+    });
+
+  const saldo = total - pagado;
+
+  document.getElementById('subtotalEdicionResumen').textContent =
+    `C$ ${formatearMontoFactura(subtotal)}`;
+
+  document.getElementById('totalEdicionResumen').textContent =
+    `C$ ${formatearMontoFactura(total)}`;
+
+  document.getElementById('pagadoEdicionResumen').textContent =
+    `C$ ${formatearMontoFactura(pagado)}`;
+
+  document.getElementById('saldoEdicionResumen').textContent =
+    `C$ ${formatearMontoFactura(saldo)}`;
 }
 
 

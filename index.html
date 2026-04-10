@@ -332,7 +332,144 @@
         </section>
 
         <!-- sub sección editar factura -->
-        
+        <div id="edicionFacturaPanel" class="module-subcard hidden">
+          <div class="module-header module-header-flex">
+            <div>
+              <h3 id="edicionFacturaTitulo">Edición de factura</h3>
+              <p id="edicionFacturaResumen" class="helper-text">
+                Selecciona una factura para editarla.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              id="btnCerrarEdicionFactura"
+              class="btn-clear-form"
+            >
+              Cerrar edición
+            </button>
+          </div>
+
+          <input type="hidden" id="edicionFacturaId">
+          <input type="hidden" id="edicionFacturaClienteIdOriginal">
+
+          <div class="venta-grid">
+            <div class="field-group autocomplete-group">
+              <label for="clienteEdicionFactura">Nombre del cliente</label>
+              <input
+                type="text"
+                id="clienteEdicionFactura"
+                placeholder="Escribe el nombre del cliente"
+                autocomplete="off"
+              >
+              <div id="clienteEdicionSuggestions" class="suggestions hidden"></div>
+            </div>
+
+            <div class="field-group">
+              <label for="fechaEdicionFactura">Fecha</label>
+              <input type="date" id="fechaEdicionFactura">
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Origen</h3>
+
+            <div class="origen-buttons" id="edicionOrigenButtons">
+              <button
+                type="button"
+                class="origin-btn origin-logo-btn edicion-origin-btn"
+                data-origin="CRE"
+              >
+                <img
+                  src="assets/logos/logo_oligar_creaciones.png"
+                  alt="Origen Creaciones"
+                  class="origin-logo"
+                >
+              </button>
+
+              <button
+                type="button"
+                class="origin-btn origin-logo-btn edicion-origin-btn"
+                data-origin="CRO"
+              >
+                <img
+                  src="assets/logos/logo_oligar_crochet.png"
+                  alt="Origen Crochet"
+                  class="origin-logo"
+                >
+              </button>
+            </div>
+
+            <p class="helper-text">
+              La edición permite cambiar el origen de la factura.
+            </p>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Productos</h3>
+            <div id="productosEdicionContainer" class="dynamic-list"></div>
+            <button type="button" id="btnAddProductoEdicion" class="btn-secondary">
+              + Añadir producto
+            </button>
+          </div>
+
+          <div class="venta-grid">
+            <div class="field-group">
+              <label for="envioEdicionFactura">Envío cobrado al cliente (C$)</label>
+              <input
+                type="number"
+                id="envioEdicionFactura"
+                value="0"
+                min="0"
+                step="0.01"
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="descEdicionFactura">Desc. global (C$)</label>
+              <input
+                type="number"
+                id="descEdicionFactura"
+                value="0"
+                min="0"
+                step="0.01"
+              >
+            </div>
+          </div>
+
+          <div class="module-subcard">
+            <h3>Pagos</h3>
+            <div id="pagosEdicionContainer" class="dynamic-list"></div>
+            <button type="button" id="btnAddPagoEdicion" class="btn-secondary">
+              + Agregar pago
+            </button>
+          </div>
+
+          <div class="summary-card">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <strong id="subtotalEdicionResumen">C$ 0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Total</span>
+              <strong id="totalEdicionResumen">C$ 0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Pagado</span>
+              <strong id="pagadoEdicionResumen">C$ 0.00</strong>
+            </div>
+            <div class="summary-row total-row">
+              <span>Saldo pendiente</span>
+              <strong id="saldoEdicionResumen">C$ 0.00</strong>
+            </div>
+          </div>
+
+          <div class="module-actions">
+            <button type="button" id="btnGuardarCambiosFactura" class="btn-confirm">
+              Guardar cambios
+            </button>
+          </div>
+        </div>
 
         <!-- sub sección cargar costos -->
         <div id="costosFacturaPanel" class="module-subcard hidden">
