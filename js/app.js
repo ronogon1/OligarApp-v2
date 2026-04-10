@@ -1900,7 +1900,6 @@ function renderTablaFacturas(facturas) {
       <td>C$ ${formatearMontoFactura(item.total_factura || 0)}</td>
       <td>C$ ${formatearMontoFactura(item.pagado || 0)}</td>
       <td>C$ ${formatearMontoFactura(item.saldo_pendiente || 0)}</td>
-      
       <td>${escapeHtml(item.estado_nombre || '')}</td>
       <td class="status-icon-cell">
         ${renderIndicadorCostos(item.estado_costos)}
@@ -1935,7 +1934,6 @@ function renderTablaFacturas(facturas) {
           </button>
         </div>
       </td>
-      
     `;
 
     body.appendChild(tr);
