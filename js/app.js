@@ -60,6 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('productoImagenForm').click();
   });
 
+  document.getElementById('btnGuardarCostosFactura')
+    ?.addEventListener('click', guardarCostosFacturaActual);
+  document.getElementById('btnCerrarCostosFactura')
+    ?.addEventListener('click', cerrarPanelCostosFactura);
+
   configurarMenuMovil();
   configurarOrigenVenta();
   actualizarSeccionActiva('Inicio');
@@ -1984,6 +1989,7 @@ async function obtenerFacturaCompleta(facturaId) {
       imagen_producto,
       productos (
         id,
+        producto_codigo,
         nombre,
         imagen_url
       )
