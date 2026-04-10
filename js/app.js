@@ -1934,15 +1934,7 @@ function renderTablaFacturas(facturas) {
             class="table-action-btn btn-ver-factura"
             data-factura-id="${item.id}"
           >
-            Ver / Reimprimir
-          </button>
-
-          <button
-            type="button"
-            class="table-action-btn btn-editar-factura"
-            data-factura-id="${item.id}"
-          >
-            🟡Editar
+            Reimprimir
           </button>
 
           <button
@@ -1960,6 +1952,15 @@ function renderTablaFacturas(facturas) {
           >
             Registro de envío
           </button>
+
+          <button
+            type="button"
+            class="table-action-btn btn-editar-factura"
+            data-factura-id="${item.id}"
+          >
+            ✏️Editar
+          </button>
+
         </div>
       </td>
     `;
@@ -2292,42 +2293,61 @@ function agregarFilaProductoEdicion(data = {}, index = null) {
   row.dataset.detalleOriginal = data.detalleFacturaIdOriginal || '';
 
   row.innerHTML = `
-    <div class="producto-grid">
-      <input
-        type="text"
-        class="producto-nombre"
-        placeholder="Producto"
-        value="${data.nombre || ''}"
-      >
+    <div class="item-card">
+      <h4 class="item-card-title">Producto</h4>
 
-      <input
-        type="number"
-        class="producto-cantidad"
-        min="1"
-        value="${data.cantidad || 1}"
-      >
+      <div class="item-grid">
+        <div class="field-group-inline">
+          <label>Producto</label>
+          <input
+            type="text"
+            class="producto-nombre"
+            placeholder="Producto"
+            value="${data.nombre || ''}"
+          >
+        </div>
 
-      <input
-        type="number"
-        class="producto-precio"
-        min="0"
-        step="0.01"
-        value="${data.precioUnit || 0}"
-      >
+        <div class="field-group-inline">
+          <label>Cantidad</label>
+          <input
+            type="number"
+            class="producto-cantidad"
+            min="1"
+            value="${data.cantidad || 1}"
+          >
+        </div>
 
-      <input
-        type="number"
-        class="producto-desc"
-        min="0"
-        step="0.01"
-        value="${data.descuento || 0}"
-      >
+        <div class="field-group-inline">
+          <label>Precio unit.</label>
+          <input
+            type="number"
+            class="producto-precio"
+            min="0"
+            step="0.01"
+            value="${data.precioUnit || 0}"
+          >
+        </div>
 
-      <span class="producto-subtotal">
-        C$ ${formatearMontoFactura(data.subtotal || 0)}
-      </span>
+        <div class="field-group-inline">
+          <label>Desc.</label>
+          <input
+            type="number"
+            class="producto-desc"
+            min="0"
+            step="0.01"
+            value="${data.descuento || 0}"
+          >
+        </div>
 
-      <button type="button" class="btn-remove">✕</button>
+        <button type="button" class="btn-remove">✕</button>
+      </div>
+
+      <div class="summary-row">
+        <span>Subtotal</span>
+        <strong class="producto-subtotal">
+          C$ ${formatearMontoFactura(data.subtotal || 0)}
+        </strong>
+      </div>
     </div>
   `;
 
@@ -2382,25 +2402,38 @@ function agregarFilaPagoEdicion(data = {}, index = null) {
   row.className = 'pago-row';
 
   row.innerHTML = `
-    <div class="pago-grid">
-      <input type="date" class="pago-fecha" value="${data.fecha || ''}">
+    <div class="item-card">
+      <h4 class="item-card-title">Pago</h4>
 
-      <input
-        type="number"
-        class="pago-monto"
-        min="0"
-        step="0.01"
-        value="${data.monto || 0}"
-      >
+      <div class="item-grid-pagos">
+        <div class="field-group-inline">
+          <label>Fecha</label>
+          <input type="date" class="pago-fecha" value="${data.fecha || ''}">
+        </div>
 
-      <input
-        type="text"
-        class="pago-metodo"
-        placeholder="Método"
-        value="${data.metodo || ''}"
-      >
+        <div class="field-group-inline">
+          <label>Monto</label>
+          <input
+            type="number"
+            class="pago-monto"
+            min="0"
+            step="0.01"
+            value="${data.monto || 0}"
+          >
+        </div>
 
-      <button type="button" class="btn-remove">✕</button>
+        <div class="field-group-inline">
+          <label>Método</label>
+          <input
+            type="text"
+            class="pago-metodo"
+            placeholder="Método"
+            value="${data.metodo || ''}"
+          >
+        </div>
+
+        <button type="button" class="btn-remove">✕</button>
+      </div>
     </div>
   `;
 

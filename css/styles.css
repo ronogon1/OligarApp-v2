@@ -1368,6 +1368,20 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   scroll-margin-top: 130px;
 }
 
+#productosEdicionContainer .item-card,
+#pagosEdicionContainer .item-card {
+  margin-bottom: 14px;
+}
+
+#productosEdicionContainer .summary-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(93, 64, 55, 0.12);
+}
+
+#productosEdicionContainer .producto-subtotal {
+  color: var(--deep-lilac);
+}
 
 /* Estilo para la sección de costos */
 
