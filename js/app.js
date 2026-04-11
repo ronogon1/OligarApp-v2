@@ -101,8 +101,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       mostrarFormularioProducto();
     });
 
+    document.getElementById('reporteTipo')
+      ?.addEventListener('change', manejarCambioTipoReporte);
+
+    document.getElementById('btnBuscarReporte')
+      ?.addEventListener('click', buscarReporte);
+
+    document.getElementById('btnLimpiarReporte')
+      ?.addEventListener('click', limpiarFiltrosReporte);
+
   configurarMenuMovil();
   configurarOrigenVenta();
+  manejarCambioTipoReporte();
   actualizarSeccionActiva('Inicio');
 
   console.log('Cliente Supabase listo');
@@ -4438,6 +4448,236 @@ function mostrarFormularioProducto() {
 function ocultarFormularioProducto() {
   document.getElementById('productoFormPanel')?.classList.add('hidden');
 }
+
+
+/* SECCIÓN REPORTES
+========================= */
+
+function manejarCambioTipoReporte() {
+  const tipo = document.getElementById('reporteTipo')?.value || 'ventas';
+  const nivelWrap = document.getElementById('reporteNivelWrap');
+
+  if (!nivelWrap) return;
+
+  if (tipo === 'ventas') {
+    nivelWrap.classList.remove('hidden');
+  } else {
+    nivelWrap.classList.add('hidden');
+  }
+}
+
+function limpiarFiltrosReporte() {
+  document.getElementById('reporteTipo').value = 'ventas';
+  document.getElementById('reporteNivelVentas').value = 'resumen';
+  document.getElementById('filtroReporteFechaDesde').value = '';
+  document.getElementById('filtroReporteFechaHasta').value = '';
+  document.getElementById('filtroReporteOrigen').value = '';
+  document.getElementById('filtroReporteEstado').value = '';
+
+  manejarCambioTipoReporte();
+  limpiarVistaReporte();
+}
+
+function limpiarVistaReporte() {
+  const tabla = document.getElementById('tablaReportes');
+  const thead = document.getElementById('tablaReportesHead');
+  const tbody = document.getElementById('tablaReportesBody');
+  const empty = document.getElementById('reportesEmptyState');
+  const resumenEmpty = document.getElementById('reportesResumenEmpty');
+  const resumenCards = document.getElementById('reportesResumenCards');
+
+  if (thead) thead.innerHTML = '';
+  if (tbody) tbody.innerHTML = '';
+
+  tabla?.classList.add('hidden');
+
+  if (empty) {
+    empty.textContent = 'Configura los filtros y pulsa “Generar reporte”.';
+  }
+
+  if (resumenEmpty) {
+    resumenEmpty.textContent = 'Configura los filtros y pulsa “Generar reporte”.';
+  }
+
+  resumenCards?.classList.add('hidden');
+}
+
+
+async function buscarReporte() {
+  const tipo = document.getElementById('reporteTipo')?.value || 'ventas';
+  const nivelVentas = document.getElementById('reporteNivelVentas')?.value || 'resumen';
+
+  if (tipo === 'ventas' && nivelVentas === 'resumen') {
+    await buscarReporteVentasResumen();
+    return;
+  }
+
+  alert('Este tipo de reporte aún no está implementado.');
+}
+
+async function buscarReporteVentasResumen() {
+  try {
+    const fechaDesde = document.getElementById('filtroReporteFechaDesde').value;
+    const fechaHasta = document.getElementById('filtroReporteFechaHasta').value;
+    const origen = document.getElementById('filtroReporteOrigen').value;
+    const estado = document.getElementById('filtroReporteEstado').value;
+
+    let query = supabaseClient
+      .from('vw_facturas_resumen')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(300);
+
+    if (fechaDesde) {
+      query = query.gte('fecha', fechaDesde);
+    }
+
+    if (fechaHasta) {
+      query = query.lte('fecha', fechaHasta);
+    }
+
+    if (origen) {
+      query = query.eq('origen_codigo', origen);
+    }
+
+    if (estado) {
+      query = query.eq('estado_codigo', estado);
+    } else {
+      query = query.in('estado_codigo', ['ACT', 'CAN']);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    const filas = data || [];
+
+    renderResumenReporteVentasResumen(filas);
+    renderTablaReporteVentasResumen(filas);
+  } catch (error) {
+    console.error('Error buscando reporte de ventas resumen:', error);
+    alert(error.message || 'Ocurrió un error al generar el reporte.');
+  }
+}
+
+function renderResumenReporteVentasResumen(filas) {
+  const resumenEmpty = document.getElementById('reportesResumenEmpty');
+  const resumenCards = document.getElementById('reportesResumenCards');
+
+  const label1 = document.getElementById('resumenLabel1');
+  const label2 = document.getElementById('resumenLabel2');
+  const label3 = document.getElementById('resumenLabel3');
+  const label4 = document.getElementById('resumenLabel4');
+
+  const valor1 = document.getElementById('resumenValor1');
+  const valor2 = document.getElementById('resumenValor2');
+  const valor3 = document.getElementById('resumenValor3');
+  const valor4 = document.getElementById('resumenValor4');
+
+  if (!filas.length) {
+    resumenCards?.classList.add('hidden');
+
+    if (resumenEmpty) {
+      resumenEmpty.textContent = 'No hay datos para el resumen.';
+    }
+    return;
+  }
+
+  const totalVendido = filas.reduce((acc, item) => {
+    return acc + Number(item.total_factura || 0);
+  }, 0);
+
+  const totalPagado = filas.reduce((acc, item) => {
+    return acc + Number(item.pagado || 0);
+  }, 0);
+
+  const totalSaldo = filas.reduce((acc, item) => {
+    return acc + Number(item.saldo_pendiente || 0);
+  }, 0);
+
+  const totalFacturas = filas.length;
+
+  label1.textContent = 'Total vendido';
+  label2.textContent = 'Total pagado';
+  label3.textContent = 'Saldo pendiente';
+  label4.textContent = 'Facturas';
+
+  valor1.textContent = formatearMoneda(totalVendido);
+  valor2.textContent = formatearMoneda(totalPagado);
+  valor3.textContent = formatearMoneda(totalSaldo);
+  valor4.textContent = String(totalFacturas);
+
+  resumenEmpty.textContent = '';
+  resumenCards?.classList.remove('hidden');
+}
+
+function renderTablaReporteVentasResumen(filas) {
+  const tabla = document.getElementById('tablaReportes');
+  const thead = document.getElementById('tablaReportesHead');
+  const tbody = document.getElementById('tablaReportesBody');
+  const empty = document.getElementById('reportesEmptyState');
+
+  if (!tabla || !thead || !tbody || !empty) return;
+
+  thead.innerHTML = `
+    <tr>
+      <th>Factura</th>
+      <th>Fecha</th>
+      <th>Cliente</th>
+      <th>Origen</th>
+      <th>Total</th>
+      <th>Pagado</th>
+      <th>Saldo</th>
+      <th>Estado</th>
+      <th>Costos</th>
+      <th>Envío</th>
+    </tr>
+  `;
+
+  tbody.innerHTML = '';
+
+  if (!filas.length) {
+    tabla.classList.add('hidden');
+    empty.textContent = 'No se encontraron resultados con esos filtros.';
+    return;
+  }
+
+  empty.textContent = '';
+  tabla.classList.remove('hidden');
+
+  filas.forEach(item => {
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${escapeHtml(item.factura_codigo || '')}</td>
+      <td>${escapeHtml(formatearFechaFactura(item.fecha || ''))}</td>
+      <td>${escapeHtml(item.cliente_nombre || '')}</td>
+      <td>${escapeHtml(item.origen_nombre || '')}</td>
+      <td>${formatearMoneda(item.total_factura || 0)}</td>
+      <td>${formatearMoneda(item.pagado || 0)}</td>
+      <td>${formatearMoneda(item.saldo_pendiente || 0)}</td>
+      <td class="${getClaseEstado(item.estado_codigo)}">
+        ${escapeHtml(item.estado_nombre || '')}
+      </td>
+      <td class="status-icon-cell">
+        ${renderIndicadorCostos(item.estado_costos)}
+      </td>
+      <td class="status-icon-cell">
+        ${renderIndicadorEnvio(item.envio_registrado)}
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+
+/* SECCIÓN CONSULTAS
+========================= */
+
 
 
 /* UTILIDADES
