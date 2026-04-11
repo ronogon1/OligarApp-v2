@@ -5,7 +5,8 @@ let productoRowCounter = 0;
 let pagoRowCounter = 0;
 
 const ventaCatalogos = {
-  estadoActivaId: null,
+  estadoSaldoPendienteId: null,
+  estadoCanceladaId: null,
   origenes: {},
   metodosPago: {}
 };
@@ -1261,7 +1262,8 @@ function generarCodigoPago(index) {
 
 async function cargarCatalogosVenta() {
   if (
-    ventaCatalogos.estadoActivaId &&
+    ventaCatalogos.estadoSaldoPendienteId &&
+    ventaCatalogos.estadoCanceladaId &&
     ventaCatalogos.origenes.CRE &&
     ventaCatalogos.origenes.CRO &&
     ventaCatalogos.metodosPago.Efectivo &&
@@ -1279,8 +1281,7 @@ async function cargarCatalogosVenta() {
     supabaseClient
       .from('estados_factura')
       .select('id, codigo')
-      .eq('codigo', 'ACT')
-      .single(),
+      .in('codigo', ['CSP', 'CAN']),
     supabaseClient
       .from('origenes_factura')
       .select('id, codigo')
@@ -1295,7 +1296,18 @@ async function cargarCatalogosVenta() {
   if (origenesResp.error) throw origenesResp.error;
   if (metodosResp.error) throw metodosResp.error;
 
-  ventaCatalogos.estadoActivaId = estadosResp.data.id;
+  ventaCatalogos.estadoSaldoPendienteId = null;
+  ventaCatalogos.estadoCanceladaId = null;
+
+  (estadosResp.data || []).forEach(e => {
+    if (e.codigo === 'CSP') {
+      ventaCatalogos.estadoSaldoPendienteId = e.id;
+    }
+
+    if (e.codigo === 'CAN') {
+      ventaCatalogos.estadoCanceladaId = e.id;
+    }
+  });
 
   ventaCatalogos.origenes = {};
   (origenesResp.data || []).forEach(item => {
@@ -1545,14 +1557,29 @@ function obtenerMetodoPagoId(nombreMetodo) {
 
 async function insertarFactura(data, clienteId) {
   const origenFacturaId = ventaCatalogos.origenes[data.origenCodigo];
-  const estadoFacturaId = ventaCatalogos.estadoActivaId;
 
   if (!origenFacturaId) {
     throw new Error(`No se encontró el origen ${data.origenCodigo}.`);
   }
 
+  // 🔹 Calcular total pagado a partir de los pagos
+  const totalPagado = (data.pagos || []).reduce((acc, pago) => {
+    return acc + Number(pago.monto || 0);
+  }, 0);
+
+  // 🔹 Calcular saldo pendiente
+  const totalFactura = Number(data.totalFactura || 0);
+  const saldoPendiente = totalFactura - totalPagado;
+
+  // 🔹 Determinar estado correcto (CSP o CAN)
+  let estadoFacturaId = ventaCatalogos.estadoSaldoPendienteId;
+
+  if (saldoPendiente <= 0) {
+    estadoFacturaId = ventaCatalogos.estadoCanceladaId;
+  }
+
   if (!estadoFacturaId) {
-    throw new Error('No se encontró el estado ACT de factura.');
+    throw new Error('No se encontró el estado CSP/CAN de factura.');
   }
 
   for (let intento = 0; intento < 8; intento += 1) {
@@ -1568,8 +1595,8 @@ async function insertarFactura(data, clienteId) {
           subtotal_factura: data.subtotalFactura,
           envio: data.envio,
           desc_global: data.descGlobal,
-          total_factura: data.totalFactura,
-          pagado: data.pagado,
+          total_factura: totalFactura,
+          pagado: totalPagado, // 🔥 usamos el valor calculado
           estado_factura_id: estadoFacturaId,
           origen_factura_id: origenFacturaId,
           observaciones: null
@@ -2046,7 +2073,7 @@ function renderTablaFacturas(facturas) {
 }
 
 function getClaseEstado(estadoCodigo) {
-  if (estadoCodigo === 'ACT') return 'estado-activa';
+  if (estadoCodigo === 'CSP') return 'estado-saldoPendiente';
   if (estadoCodigo === 'ANU') return 'estado-anulada';
   if (estadoCodigo === 'CAN') return 'estado-cancelada';
   return '';
@@ -3119,7 +3146,7 @@ async function cambiarEstadoFactura(facturaId, nuevoCodigoEstado) {
 
 async function reactivarFacturaSegunSaldo(facturaId, saldoPendiente) {
   const saldo = Number(saldoPendiente || 0);
-  const codigoDestino = saldo <= 0 ? 'CAN' : 'ACT';
+  const codigoDestino = saldo <= 0 ? 'CAN' : 'CSP';
   await cambiarEstadoFactura(facturaId, codigoDestino);
 }
 
@@ -4544,7 +4571,7 @@ async function buscarReporteVentasResumen() {
     if (estado) {
       query = query.eq('estado_codigo', estado);
     } else {
-      query = query.in('estado_codigo', ['ACT', 'CAN']);
+      query = query.in('estado_codigo', ['CSP', 'CAN']);
     }
 
     const { data, error } = await query;
