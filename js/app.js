@@ -1935,7 +1935,11 @@ function renderTablaFacturas(facturas) {
       <td>C$ ${formatearMontoFactura(item.total_factura || 0)}</td>
       <td>C$ ${formatearMontoFactura(item.pagado || 0)}</td>
       <td>C$ ${formatearMontoFactura(item.saldo_pendiente || 0)}</td>
-      <td>${escapeHtml(item.estado_nombre || '')}</td>
+      
+      <td class="${getClaseEstado(item.estado_codigo)}">
+        ${escapeHtml(item.estado_nombre || '')}
+      </td>
+
       <td>
         ${renderBotonEstadoFactura(item)}
       </td>
@@ -2013,7 +2017,7 @@ function renderTablaFacturas(facturas) {
 
   body.querySelectorAll('.btn-anular-factura').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const confirmado = confirm('¿Deseas anular esta factura?');
+      const confirmado = confirm('⚠️ Esta acción anulará la factura.\n\n¿Deseas continuar?');
       if (!confirmado) return;
 
       await cambiarEstadoFactura(btn.dataset.facturaId, 'ANU');
@@ -2031,6 +2035,13 @@ function renderTablaFacturas(facturas) {
       );
     });
   });
+}
+
+function getClaseEstado(estadoCodigo) {
+  if (estadoCodigo === 'ACT') return 'estado-activa';
+  if (estadoCodigo === 'ANU') return 'estado-anulada';
+  if (estadoCodigo === 'CAN') return 'estado-cancelada';
+  return '';
 }
 
 async function abrirFacturaGuardada(facturaId) {

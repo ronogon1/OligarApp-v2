@@ -1383,6 +1383,42 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   color: var(--deep-lilac);
 }
 
+.btn-anular-factura {
+  color: #c62828;
+  border: 1.5px solid #c62828;
+  background-color: transparent;
+}
+
+.btn-anular-factura:hover {
+  background-color: rgba(198, 40, 40, 0.08);
+}
+
+.btn-activar-factura {
+  color: #2e7d32;
+  border: 1.5px solid #2e7d32;
+  background-color: transparent;
+}
+
+.btn-activar-factura:hover {
+  background-color: rgba(46, 125, 50, 0.08);
+}
+
+.estado-activa {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.estado-anulada {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.estado-cancelada {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+
 /* Estilo para la sección de costos */
 
 .cost-input {
