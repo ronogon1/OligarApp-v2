@@ -1936,6 +1936,9 @@ function renderTablaFacturas(facturas) {
       <td>C$ ${formatearMontoFactura(item.pagado || 0)}</td>
       <td>C$ ${formatearMontoFactura(item.saldo_pendiente || 0)}</td>
       <td>${escapeHtml(item.estado_nombre || '')}</td>
+      <td>
+        ${renderBotonEstadoFactura(item)}
+      </td>
       <td class="status-icon-cell">
         ${renderIndicadorCostos(item.estado_costos)}
       </td>
@@ -1958,7 +1961,7 @@ function renderTablaFacturas(facturas) {
             class="table-action-btn btn-costos-factura"
             data-factura-id="${item.id}"
           >
-            Cargar costos
+            Costos MO/MD
           </button>
 
           <button
@@ -1966,7 +1969,7 @@ function renderTablaFacturas(facturas) {
             class="table-action-btn btn-envio-factura"
             data-factura-id="${item.id}"
           >
-            Registro de envío
+            Costo Envío
           </button>
 
           <button
@@ -2005,6 +2008,27 @@ function renderTablaFacturas(facturas) {
   body.querySelectorAll('.btn-envio-factura').forEach(btn => {
     btn.addEventListener('click', () => {
       abrirPanelEnvioFactura(btn.dataset.facturaId);
+    });
+  });
+
+  body.querySelectorAll('.btn-anular-factura').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const confirmado = confirm('¿Deseas anular esta factura?');
+      if (!confirmado) return;
+
+      await cambiarEstadoFactura(btn.dataset.facturaId, 'ANU');
+    });
+  });
+
+  body.querySelectorAll('.btn-activar-factura').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const confirmado = confirm('¿Deseas activar nuevamente esta factura?');
+      if (!confirmado) return;
+
+      await reactivarFacturaSegunSaldo(
+        btn.dataset.facturaId,
+        btn.dataset.saldo
+      );
     });
   });
 }
@@ -3015,6 +3039,69 @@ function setEstadoBotonGuardarEdicion(guardando) {
 
   btn.disabled = guardando;
   btn.textContent = guardando ? 'Guardando...' : 'Guardar cambios';
+}
+
+function renderBotonEstadoFactura(item) {
+  const estado = item.estado_codigo || '';
+
+  if (estado === 'ANU') {
+    return `
+      <button
+        type="button"
+        class="table-action-btn btn-activar-factura"
+        data-factura-id="${item.id}"
+        data-saldo="${Number(item.saldo_pendiente || 0)}"
+      >
+        Activar
+      </button>
+    `;
+  }
+
+  return `
+    <button
+      type="button"
+      class="table-action-btn btn-anular-factura"
+      data-factura-id="${item.id}"
+    >
+      Anular
+    </button>
+  `;
+}
+
+async function cambiarEstadoFactura(facturaId, nuevoCodigoEstado) {
+  try {
+    const { data: estado, error: errorEstado } = await supabaseClient
+      .from('estados_factura')
+      .select('id, codigo, nombre')
+      .eq('codigo', nuevoCodigoEstado)
+      .single();
+
+    if (errorEstado) {
+      throw errorEstado;
+    }
+
+    const { error: errorUpdate } = await supabaseClient
+      .from('facturas')
+      .update({
+        estado_factura_id: estado.id
+      })
+      .eq('id', facturaId);
+
+    if (errorUpdate) {
+      throw errorUpdate;
+    }
+
+    await buscarFacturas();
+  } catch (error) {
+    console.error('Error cambiando estado de factura:', error);
+    alert(error.message || 'No fue posible cambiar el estado de la factura.');
+  }
+}
+
+async function reactivarFacturaSegunSaldo(facturaId, saldoPendiente) {
+  const saldo = Number(saldoPendiente || 0);
+  const codigoDestino = saldo <= 0 ? 'CAN' : 'ACT';
+  await cambiarEstadoFactura(facturaId, codigoDestino);
 }
 
 
