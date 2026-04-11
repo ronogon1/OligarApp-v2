@@ -789,7 +789,6 @@ async function crearProductoNuevo(itemProducto, origenCodigo) {
         {
           producto_codigo: productoCodigo,
           nombre: itemProducto.nombre,
-          categoria_producto_id: null,
           imagen_url: null,
           activo: true
         }
@@ -4410,7 +4409,6 @@ async function guardarProductoGestion() {
           {
             producto_codigo: productoCodigo,
             nombre: data.nombre,
-            categoria_producto_id: null,
             imagen_url: imagenFinal,
             activo: true
           }
