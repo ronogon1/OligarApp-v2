@@ -1632,7 +1632,6 @@ async function insertarPagosFactura(facturaId, clienteId, pagos) {
         pago_codigo: generarCodigoPagoDesdeBase(basePago, index),
         factura_id: facturaId,
         cliente_id: clienteId,
-        tipo_pago_id: null,
         metodo_pago_id: metodoPagoId,
         fecha: item.fecha,
         monto: item.monto,
