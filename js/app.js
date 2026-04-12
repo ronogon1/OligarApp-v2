@@ -4537,13 +4537,22 @@ function limpiarVistaReporte() {
   resumenCards?.classList.add('hidden');
 }
 
-
 async function buscarReporte() {
   const tipo = document.getElementById('reporteTipo')?.value || 'ventas';
   const nivelVentas = document.getElementById('reporteNivelVentas')?.value || 'resumen';
 
   if (tipo === 'ventas' && nivelVentas === 'resumen') {
     await buscarReporteVentasResumen();
+    return;
+  }
+
+  if (tipo === 'ventas' && nivelVentas === 'detalle') {
+    await buscarReporteVentasDetalle();
+    return;
+  }
+
+  if (tipo === 'ganancias') {
+    await buscarReporteGanancias();
     return;
   }
 
@@ -4702,6 +4711,326 @@ function renderTablaReporteVentasResumen(filas) {
       </td>
       <td class="status-icon-cell">
         ${renderIndicadorEnvio(item.envio_registrado)}
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function buscarReporteVentasDetalle() {
+  try {
+    const fechaDesde = document.getElementById('filtroReporteFechaDesde').value;
+    const fechaHasta = document.getElementById('filtroReporteFechaHasta').value;
+    const origen = document.getElementById('filtroReporteOrigen').value;
+    const estado = document.getElementById('filtroReporteEstado').value;
+
+    let query = supabaseClient
+      .from('vw_detalle_factura_validacion')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .order('factura_codigo', { ascending: false })
+      .limit(500);
+
+    if (fechaDesde) {
+      query = query.gte('fecha', fechaDesde);
+    }
+
+    if (fechaHasta) {
+      query = query.lte('fecha', fechaHasta);
+    }
+
+    if (origen) {
+      query = query.eq('origen_codigo', origen);
+    }
+
+    if (estado) {
+      query = query.eq('estado_codigo', estado);
+    } else {
+      query = query.in('estado_codigo', ['CSP', 'CAN']);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    const filas = data || [];
+
+    renderResumenReporteVentasDetalle(filas);
+    renderTablaReporteVentasDetalle(filas);
+  } catch (error) {
+    console.error('Error buscando reporte de ventas detalle:', error);
+    alert(error.message || 'Ocurrió un error al generar el reporte.');
+  }
+}
+
+function renderResumenReporteVentasDetalle(filas) {
+  const resumenEmpty = document.getElementById('reportesResumenEmpty');
+  const resumenCards = document.getElementById('reportesResumenCards');
+
+  const label1 = document.getElementById('resumenLabel1');
+  const label2 = document.getElementById('resumenLabel2');
+  const label3 = document.getElementById('resumenLabel3');
+  const label4 = document.getElementById('resumenLabel4');
+
+  const valor1 = document.getElementById('resumenValor1');
+  const valor2 = document.getElementById('resumenValor2');
+  const valor3 = document.getElementById('resumenValor3');
+  const valor4 = document.getElementById('resumenValor4');
+
+  if (!filas.length) {
+    resumenCards?.classList.add('hidden');
+
+    if (resumenEmpty) {
+      resumenEmpty.textContent = 'No hay datos para el resumen.';
+    }
+    return;
+  }
+
+  const totalLineas = filas.length;
+
+  const totalCantidad = filas.reduce((acc, item) => {
+    return acc + Number(item.cantidad || 0);
+  }, 0);
+
+  const totalSubtotal = filas.reduce((acc, item) => {
+    return acc + Number(item.subtotal || 0);
+  }, 0);
+
+  const totalFacturas = new Set(
+    filas.map(item => item.factura_id).filter(Boolean)
+  ).size;
+
+  label1.textContent = 'Líneas';
+  label2.textContent = 'Cantidad total';
+  label3.textContent = 'Subtotal líneas';
+  label4.textContent = 'Facturas';
+
+  valor1.textContent = String(totalLineas);
+  valor2.textContent = String(totalCantidad);
+  valor3.textContent = formatearMoneda(totalSubtotal);
+  valor4.textContent = String(totalFacturas);
+
+  resumenEmpty.textContent = '';
+  resumenCards?.classList.remove('hidden');
+}
+
+function renderTablaReporteVentasDetalle(filas) {
+  const tabla = document.getElementById('tablaReportes');
+  const thead = document.getElementById('tablaReportesHead');
+  const tbody = document.getElementById('tablaReportesBody');
+  const empty = document.getElementById('reportesEmptyState');
+
+  if (!tabla || !thead || !tbody || !empty) return;
+
+  thead.innerHTML = `
+    <tr>
+      <th>Factura</th>
+      <th>Fecha</th>
+      <th>Cliente</th>
+      <th>Origen</th>
+      <th>Producto</th>
+      <th>Cantidad</th>
+      <th>P. Unit.</th>
+      <th>Desc.</th>
+      <th>Subtotal</th>
+      <th>Estado</th>
+    </tr>
+  `;
+
+  tbody.innerHTML = '';
+
+  if (!filas.length) {
+    tabla.classList.add('hidden');
+    empty.textContent = 'No se encontraron resultados con esos filtros.';
+    return;
+  }
+
+  empty.textContent = '';
+  tabla.classList.remove('hidden');
+
+  filas.forEach(item => {
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${escapeHtml(item.factura_codigo || '')}</td>
+      <td>${escapeHtml(formatearFechaFactura(item.fecha || ''))}</td>
+      <td>${escapeHtml(item.cliente_nombre || '')}</td>
+      <td>${escapeHtml(item.origen_nombre || '')}</td>
+      <td>${escapeHtml(item.producto_nombre || '')}</td>
+      <td>${escapeHtml(String(Number(item.cantidad || 0)))}</td>
+      <td>${formatearMoneda(item.precio_unit || 0)}</td>
+      <td>${formatearMoneda(item.desc_prod || 0)}</td>
+      <td>${formatearMoneda(item.subtotal || 0)}</td>
+      <td class="${getClaseEstado(item.estado_codigo)}">
+        ${escapeHtml(item.estado_nombre || '')}
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function buscarReporteGanancias() {
+  try {
+    const fechaDesde = document.getElementById('filtroReporteFechaDesde').value;
+    const fechaHasta = document.getElementById('filtroReporteFechaHasta').value;
+    const origen = document.getElementById('filtroReporteOrigen').value;
+    const estado = document.getElementById('filtroReporteEstado').value;
+
+    let query = supabaseClient
+      .from('vw_ganancia_factura')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(300);
+
+    if (fechaDesde) {
+      query = query.gte('fecha', fechaDesde);
+    }
+
+    if (fechaHasta) {
+      query = query.lte('fecha', fechaHasta);
+    }
+
+    if (origen) {
+      query = query.eq('origen_codigo', origen);
+    }
+
+    if (estado) {
+      query = query.eq('estado_codigo', estado);
+    } else {
+      query = query.in('estado_codigo', ['CSP', 'CAN']);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    const filas = data || [];
+
+    renderResumenReporteGanancias(filas);
+    renderTablaReporteGanancias(filas);
+  } catch (error) {
+    console.error('Error buscando reporte de ganancias:', error);
+    alert(error.message || 'Ocurrió un error al generar el reporte.');
+  }
+}
+
+function renderResumenReporteGanancias(filas) {
+  const resumenEmpty = document.getElementById('reportesResumenEmpty');
+  const resumenCards = document.getElementById('reportesResumenCards');
+
+  const label1 = document.getElementById('resumenLabel1');
+  const label2 = document.getElementById('resumenLabel2');
+  const label3 = document.getElementById('resumenLabel3');
+  const label4 = document.getElementById('resumenLabel4');
+
+  const valor1 = document.getElementById('resumenValor1');
+  const valor2 = document.getElementById('resumenValor2');
+  const valor3 = document.getElementById('resumenValor3');
+  const valor4 = document.getElementById('resumenValor4');
+
+  if (!filas.length) {
+    resumenCards?.classList.add('hidden');
+
+    if (resumenEmpty) {
+      resumenEmpty.textContent = 'No hay datos para el resumen.';
+    }
+    return;
+  }
+
+  const totalVendido = filas.reduce((acc, item) => {
+    return acc + Number(item.total_factura || 0);
+  }, 0);
+
+  const totalCosto = filas.reduce((acc, item) => {
+    return acc + Number(item.costo_total_negocio || 0);
+  }, 0);
+
+  const totalGanancia = filas.reduce((acc, item) => {
+    return acc + Number(item.ganancia_bruta || 0);
+  }, 0);
+
+  const margenGlobal = totalVendido > 0
+    ? (totalGanancia / totalVendido) * 100
+    : 0;
+
+  label1.textContent = 'Total vendido';
+  label2.textContent = 'Costo total';
+  label3.textContent = 'Ganancia bruta';
+  label4.textContent = 'Margen global';
+
+  valor1.textContent = formatearMoneda(totalVendido);
+  valor2.textContent = formatearMoneda(totalCosto);
+  valor3.textContent = formatearMoneda(totalGanancia);
+  valor4.textContent = `${formatearMontoFactura(margenGlobal)} %`;
+
+  resumenEmpty.textContent = '';
+  resumenCards?.classList.remove('hidden');
+}
+
+function renderTablaReporteGanancias(filas) {
+  const tabla = document.getElementById('tablaReportes');
+  const thead = document.getElementById('tablaReportesHead');
+  const tbody = document.getElementById('tablaReportesBody');
+  const empty = document.getElementById('reportesEmptyState');
+
+  if (!tabla || !thead || !tbody || !empty) return;
+
+  thead.innerHTML = `
+    <tr>
+      <th>Factura</th>
+      <th>Fecha</th>
+      <th>Cliente</th>
+      <th>Origen</th>
+      <th>Total venta</th>
+      <th>Costo productos</th>
+      <th>Costo envío</th>
+      <th>Costo total</th>
+      <th>Ganancia</th>
+      <th>Margen</th>
+      <th>Estado</th>
+      <th>Costos</th>
+    </tr>
+  `;
+
+  tbody.innerHTML = '';
+
+  if (!filas.length) {
+    tabla.classList.add('hidden');
+    empty.textContent = 'No se encontraron resultados con esos filtros.';
+    return;
+  }
+
+  empty.textContent = '';
+  tabla.classList.remove('hidden');
+
+  filas.forEach(item => {
+    const margen = Number(item.margen_bruto_pct || 0) * 100;
+
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${escapeHtml(item.factura_codigo || '')}</td>
+      <td>${escapeHtml(formatearFechaFactura(item.fecha || ''))}</td>
+      <td>${escapeHtml(item.cliente_nombre || '')}</td>
+      <td>${escapeHtml(item.origen_nombre || '')}</td>
+      <td>${formatearMoneda(item.total_factura || 0)}</td>
+      <td>${formatearMoneda(item.total_costo_productos || 0)}</td>
+      <td>${formatearMoneda(item.costo_envio || 0)}</td>
+      <td>${formatearMoneda(item.costo_total_negocio || 0)}</td>
+      <td>${formatearMoneda(item.ganancia_bruta || 0)}</td>
+      <td>${formatearMontoFactura(margen)} %</td>
+      <td class="${getClaseEstado(item.estado_codigo)}">
+        ${escapeHtml(item.estado_nombre || '')}
+      </td>
+      <td class="status-icon-cell">
+        ${renderIndicadorCostos(item.estado_costos)}
       </td>
     `;
 
