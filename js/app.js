@@ -4621,6 +4621,12 @@ function renderResumenReporteVentasResumen(filas) {
   const valor3 = document.getElementById('resumenValor3');
   const valor4 = document.getElementById('resumenValor4');
 
+  const nota = document.getElementById('reportesResumenNota');
+  if (nota) {
+    nota.classList.add('hidden');
+    nota.textContent = '';
+  }
+
   if (!filas.length) {
     resumenCards?.classList.add('hidden');
 
@@ -4815,6 +4821,14 @@ function renderResumenReporteVentasDetalle(filas) {
 
   resumenEmpty.textContent = '';
   resumenCards?.classList.remove('hidden');
+
+  const nota = document.getElementById('reportesResumenNota');
+
+  if (nota) {
+    nota.textContent = 'Este reporte no considera el cobro por envío ni el descuento global, por lo que el valor del total facturado puede diferir del total de las facturas.';
+    nota.classList.remove('hidden');
+  }
+
 }
 
 function renderTablaReporteVentasDetalle(filas) {
@@ -4934,6 +4948,12 @@ function renderResumenReporteGanancias(filas) {
   const valor2 = document.getElementById('resumenValor2');
   const valor3 = document.getElementById('resumenValor3');
   const valor4 = document.getElementById('resumenValor4');
+
+  const nota = document.getElementById('reportesResumenNota');
+  if (nota) {
+    nota.classList.add('hidden');
+    nota.textContent = '';
+  }
 
   if (!filas.length) {
     resumenCards?.classList.add('hidden');

@@ -1551,6 +1551,15 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   gap: 16px;
   margin-top: 20px;
 }
+
+.reportes-nota {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #6b6b6b;
+  font-style: italic;
+  text-align: center;
+}
+
  /*
 .reportes-acciones .btn-primary {
   min-width: 180px;
@@ -1566,4 +1575,3 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   background: #fdecea;
 }
   */
-  
