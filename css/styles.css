@@ -1548,9 +1548,8 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 .reportes-acciones {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   margin-top: 20px;
-  flex-wrap: wrap;
 }
 
 .reportes-acciones .btn-primary {
