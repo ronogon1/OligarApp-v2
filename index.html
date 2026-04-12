@@ -73,7 +73,9 @@
       <button class="mobile-menu-btn" data-view="clientesView" type="button">👥 Clientes</button>
       <button class="mobile-menu-btn" data-view="productosView" type="button">📦 Productos</button>
       <button class="mobile-menu-btn" data-view="reportesView" type="button">📊 Reportes</button>
-      <button class="mobile-menu-btn" type="button" disabled>🔎 Consultas</button>
+      <button class="mobile-menu-btn" data-view="flujosView" type="button">💸 Flujos</button>
+      <button class="mobile-menu-btn" type="button" disabled>📚 Indicadores</button>
+      <button class="mobile-menu-btn" type="button" disabled>®️ Sobre la App</button>
     </div>
 
     <main class="app-content">
@@ -1135,7 +1137,135 @@
         </section>
       </section>
 
-      <!-- SECCIÓN CONSULTAS -->
+      <!-- SECCIÓN FLUJOS -->
+      <section id="flujosView" class="app-section">
+        <section class="module-card">
+          <div class="module-header module-header-flex">
+            <div>
+              <h2>Flujos</h2>
+              <p class="helper-text">
+                Control de retiros y saldos disponibles de la dueña y del negocio.
+              </p>
+            </div>
+          </div>
+
+          <!-- FILTROS -->
+          <div class="module-subcard">
+            <h3>Filtros</h3>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="filtroFlujoFechaDesde">Fecha desde</label>
+                <input type="date" id="filtroFlujoFechaDesde">
+              </div>
+
+              <div class="field-group">
+                <label for="filtroFlujoFechaHasta">Fecha hasta</label>
+                <input type="date" id="filtroFlujoFechaHasta">
+              </div>
+            </div>
+
+            <div class="module-actions">
+              <button type="button" id="btnBuscarFlujos" class="btn-confirm">
+                Actualizar
+              </button>
+            </div>
+          </div>
+
+          <!-- RESUMEN -->
+          <div class="module-subcard">
+            <h3>Resumen</h3>
+
+            <div id="flujosResumenCards" class="summary-card">
+              <div class="summary-row">
+                <span>Saldo dueña</span>
+                <strong id="flujoSaldoDuena">C$ 0.00</strong>
+              </div>
+
+              <div class="summary-row">
+                <span>Saldo negocio</span>
+                <strong id="flujoSaldoNegocio">C$ 0.00</strong>
+              </div>
+
+              <div class="summary-row total-row">
+                <span>Saldo total en caja</span>
+                <strong id="flujoSaldoTotal">C$ 0.00</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- REGISTRO -->
+          <div class="module-subcard">
+            <h3>Registrar movimiento</h3>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="flujoFecha">Fecha</label>
+                <input type="date" id="flujoFecha">
+              </div>
+
+              <div class="field-group">
+                <label for="flujoTipo">Tipo</label>
+                <select id="flujoTipo">
+                  <option value="">Selecciona</option>
+                  <option value="MO">Retiro mano de obra</option>
+                  <option value="UTILIDAD">Retiro utilidad</option>
+                  <option value="REINVERSION">Reinversión</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
+                <label for="flujoMonto">Monto</label>
+                <input type="number" id="flujoMonto" min="0" step="0.01">
+              </div>
+
+              <div class="field-group">
+                <label for="flujoObservacion">Observación</label>
+                <input type="text" id="flujoObservacion">
+              </div>
+            </div>
+
+            <div class="module-actions">
+              <button type="button" id="btnGuardarFlujo" class="btn-confirm">
+                Guardar
+              </button>
+
+              <button type="button" id="btnLimpiarFlujo" class="btn-clear-form">
+                Limpiar
+              </button>
+            </div>
+          </div>
+
+          <!-- RESULTADOS -->
+          <div class="module-subcard">
+            <h3>Movimientos</h3>
+
+            <div id="flujosEmptyState" class="helper-text">
+              No hay movimientos para mostrar.
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table hidden" id="tablaFlujos">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Fondo</th>
+                    <th>Monto</th>
+                    <th>Observación</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaFlujosBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+      </section>
+
+      <!-- SECCIÓN GRÁFICOS -->
 
 
     </main>
