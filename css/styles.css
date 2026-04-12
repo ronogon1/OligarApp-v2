@@ -1558,5 +1558,11 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 }
 
 .reportes-acciones .btn-secondary-outline {
-  min-width: 150px;
+  background: transparent;
+  border: 1.5px solid #d32f2f;
+  color: #d32f2f;
+}
+
+.reportes-acciones .btn-secondary-outline:hover {
+  background: #fdecea;
 }
