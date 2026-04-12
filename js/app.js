@@ -102,18 +102,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       mostrarFormularioProducto();
     });
 
-    document.getElementById('reporteTipo')
+  document.getElementById('reporteTipo')
       ?.addEventListener('change', manejarCambioTipoReporte);
 
-    document.getElementById('btnBuscarReporte')
+  document.getElementById('btnBuscarReporte')
       ?.addEventListener('click', buscarReporte);
 
-    document.getElementById('btnLimpiarReporte')
+  document.getElementById('btnLimpiarReporte')
       ?.addEventListener('click', limpiarFiltrosReporte);
+  
+  document.getElementById('filtroReporteMes')
+    ?.addEventListener('change', sincronizarFechasReporteDesdeMes);
 
   configurarMenuMovil();
   configurarOrigenVenta();
   manejarCambioTipoReporte();
+  inicializarFiltrosReporte();
   actualizarSeccionActiva('Inicio');
 
   console.log('Cliente Supabase listo');
@@ -4496,11 +4500,15 @@ function manejarCambioTipoReporte() {
 function limpiarFiltrosReporte() {
   document.getElementById('reporteTipo').value = 'ventas';
   document.getElementById('reporteNivelVentas').value = 'resumen';
-  document.getElementById('filtroReporteFechaDesde').value = '';
-  document.getElementById('filtroReporteFechaHasta').value = '';
   document.getElementById('filtroReporteOrigen').value = '';
   document.getElementById('filtroReporteEstado').value = '';
 
+  const inputMes = document.getElementById('filtroReporteMes');
+  if (inputMes) {
+    inputMes.value = obtenerMesActualReporte();
+  }
+
+  sincronizarFechasReporteDesdeMes();
   manejarCambioTipoReporte();
   limpiarVistaReporte();
 }
@@ -4699,6 +4707,55 @@ function renderTablaReporteVentasResumen(filas) {
 
     tbody.appendChild(tr);
   });
+}
+
+function obtenerMesActualReporte() {
+  const hoy = new Date();
+  const year = hoy.getFullYear();
+  const month = String(hoy.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function obtenerPrimerDiaMes(periodoMes) {
+  if (!periodoMes || !periodoMes.includes('-')) {
+    return '';
+  }
+
+  return `${periodoMes}-01`;
+}
+
+function obtenerUltimoDiaMes(periodoMes) {
+  if (!periodoMes || !periodoMes.includes('-')) {
+    return '';
+  }
+
+  const [year, month] = periodoMes.split('-').map(Number);
+  const ultimoDia = new Date(year, month, 0);
+  const day = String(ultimoDia.getDate()).padStart(2, '0');
+
+  return `${periodoMes}-${day}`;
+}
+
+function sincronizarFechasReporteDesdeMes() {
+  const mes = document.getElementById('filtroReporteMes')?.value || '';
+  const inputDesde = document.getElementById('filtroReporteFechaDesde');
+  const inputHasta = document.getElementById('filtroReporteFechaHasta');
+
+  if (!mes || !inputDesde || !inputHasta) {
+    return;
+  }
+
+  inputDesde.value = obtenerPrimerDiaMes(mes);
+  inputHasta.value = obtenerUltimoDiaMes(mes);
+}
+
+function inicializarFiltrosReporte() {
+  const inputMes = document.getElementById('filtroReporteMes');
+
+  if (!inputMes) return;
+
+  inputMes.value = obtenerMesActualReporte();
+  sincronizarFechasReporteDesdeMes();
 }
 
 
