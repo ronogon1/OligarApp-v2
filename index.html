@@ -1033,12 +1033,16 @@
               </div>
             </div>
 
-            <div class="venta-grid reportes-fecha-grid">
+            <div class="venta-grid">
               <div class="field-group">
                 <label for="filtroReporteMes">Mes</label>
                 <input type="month" id="filtroReporteMes">
               </div>
 
+              <div class="field-group field-group-empty"></div>
+            </div>
+
+            <div class="venta-grid">
               <div class="field-group">
                 <label for="filtroReporteFechaDesde">Fecha desde</label>
                 <input type="date" id="filtroReporteFechaDesde">
@@ -1063,8 +1067,8 @@
               <div class="field-group">
                 <label for="filtroReporteEstado">Estado</label>
                 <select id="filtroReporteEstado">
-                  <option value="">Activas y canceladas</option>
-                  <option value="ACT">Activa</option>
+                  <option value="">Con Saldo Pendiente y canceladas</option>
+                  <option value="CSP">Con Saldo Pendiente</option>
                   <option value="CAN">Cancelada</option>
                   <option value="ANU">Anulada</option>
                 </select>
