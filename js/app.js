@@ -4789,13 +4789,7 @@ function renderResumenReporteVentasDetalle(filas) {
     return;
   }
 
-  const totalLineas = filas.length;
-
-  const totalCantidad = filas.reduce((acc, item) => {
-    return acc + Number(item.cantidad || 0);
-  }, 0);
-
-  const totalSubtotal = filas.reduce((acc, item) => {
+  const totalFacturado = filas.reduce((acc, item) => {
     return acc + Number(item.subtotal || 0);
   }, 0);
 
@@ -4803,15 +4797,21 @@ function renderResumenReporteVentasDetalle(filas) {
     filas.map(item => item.factura_id).filter(Boolean)
   ).size;
 
-  label1.textContent = 'Líneas';
-  label2.textContent = 'Cantidad total';
-  label3.textContent = 'Subtotal líneas';
-  label4.textContent = 'Facturas';
+  const totalProductos = filas.length;
 
-  valor1.textContent = String(totalLineas);
-  valor2.textContent = String(totalCantidad);
-  valor3.textContent = formatearMoneda(totalSubtotal);
-  valor4.textContent = String(totalFacturas);
+  const totalCantidadProductos = filas.reduce((acc, item) => {
+    return acc + Number(item.cantidad || 0);
+  }, 0);
+
+  label1.textContent = 'Total facturado';
+  label2.textContent = 'Total facturas';
+  label3.textContent = 'Total productos';
+  label4.textContent = 'Total cantidad de productos';
+
+  valor1.textContent = formatearMoneda(totalFacturado);
+  valor2.textContent = String(totalFacturas);
+  valor3.textContent = String(totalProductos);
+  valor4.textContent = String(totalCantidadProductos);
 
   resumenEmpty.textContent = '';
   resumenCards?.classList.remove('hidden');
