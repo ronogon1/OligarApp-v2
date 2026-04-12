@@ -1542,3 +1542,21 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 .envio-radio-label input[type="radio"] {
   margin: 0;
 }
+
+/* FORMATOS ADICIONALES PARA SECCIÓN REPORTES */
+
+.reportes-acciones {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.reportes-acciones .btn-primary {
+  min-width: 180px;
+}
+
+.reportes-acciones .btn-secondary-outline {
+  min-width: 150px;
+}
