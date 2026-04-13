@@ -1560,18 +1560,31 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   text-align: center;
 }
 
- /*
-.reportes-acciones .btn-primary {
-  min-width: 180px;
+
+/* FORMATOS ADICIONALES PARA SECCIÓN FLUJO */
+
+.module-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px; /* 👈 separación limpia entre botones */
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
 
-.reportes-acciones .btn-secondary-outline {
-  background: transparent;
-  border: 1.5px solid #d32f2f;
-  color: #d32f2f;
+.flujo-ingreso {
+  color: #1b8a3d;
+  font-weight: 700;
 }
 
-.reportes-acciones .btn-secondary-outline:hover {
-  background: #fdecea;
+.flujo-egreso {
+  color: #b3261e;
+  font-weight: 700;
 }
-  */
+
+.flujo-saldo {
+  font-weight: 700;
+}
+
+.row-saldo-inicial {
+  background: rgba(0, 0, 0, 0.04);
+}

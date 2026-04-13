@@ -75,7 +75,7 @@
       <button class="mobile-menu-btn" data-view="reportesView" type="button">📊 Reportes</button>
       <button class="mobile-menu-btn" data-view="flujosView" type="button">💸 Flujos</button>
       <button class="mobile-menu-btn" type="button" disabled>📚 Indicadores</button>
-      <button class="mobile-menu-btn" type="button" disabled>®️ Sobre la App</button>
+      <button class="mobile-menu-btn" type="button" disabled>Sobre la App ®️</button>
     </div>
 
     <main class="app-content">
@@ -1155,6 +1155,15 @@
 
             <div class="venta-grid">
               <div class="field-group">
+                <label for="filtroReporteMes">Mes</label>
+                <input type="month" id="filtroReporteMes">
+              </div>
+
+              <div class="field-group field-group-empty"></div>
+            </div>
+
+            <div class="venta-grid">
+              <div class="field-group">
                 <label for="filtroFlujoFechaDesde">Fecha desde</label>
                 <input type="date" id="filtroFlujoFechaDesde">
               </div>
@@ -1196,7 +1205,7 @@
 
           <!-- REGISTRO -->
           <div class="module-subcard">
-            <h3>Registrar movimiento</h3>
+            <h3>Registrar movimiento de egreso</h3>
 
             <div class="venta-grid">
               <div class="field-group">
@@ -1253,8 +1262,11 @@
                     <th>Fecha</th>
                     <th>Tipo</th>
                     <th>Fondo</th>
+                    <th>Naturaleza</th>
                     <th>Monto</th>
+                    <th>Factura</th>
                     <th>Observación</th>
+                    <th>Saldo</th>
                   </tr>
                 </thead>
                 <tbody id="tablaFlujosBody"></tbody>

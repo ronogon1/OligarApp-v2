@@ -5158,6 +5158,11 @@ async function buscarFlujos() {
     const fechaDesde = document.getElementById('filtroFlujoFechaDesde').value;
     const fechaHasta = document.getElementById('filtroFlujoFechaHasta').value;
 
+    if (!fechaDesde || !fechaHasta) {
+      alert('Debes indicar Fecha desde y Fecha hasta.');
+      return;
+    }
+
     const { data: resumen, error: errorResumen } = await supabaseClient
       .from('vw_resumen_flujos_caja')
       .select('*')
@@ -5167,29 +5172,45 @@ async function buscarFlujos() {
       throw errorResumen;
     }
 
-    let query = supabaseClient
-      .from('vw_detalle_flujos_caja')
+    const fechaInicialCorte = restarUnDia(fechaDesde);
+
+    let querySaldoInicial = supabaseClient
+      .from('vw_flujo_movimientos')
       .select('*')
-      .order('fecha', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(300);
+      .lt('fecha', fechaDesde)
+      .order('fecha', { ascending: true })
+      .order('created_at', { ascending: true });
 
-    if (fechaDesde) {
-      query = query.gte('fecha', fechaDesde);
+    let queryMovimientos = supabaseClient
+      .from('vw_flujo_movimientos')
+      .select('*')
+      .gte('fecha', fechaDesde)
+      .lte('fecha', fechaHasta)
+      .order('fecha', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    const [
+      { data: movimientosPrevios, error: errorPrevios },
+      { data: movimientosPeriodo, error: errorPeriodo }
+    ] = await Promise.all([
+      querySaldoInicial,
+      queryMovimientos
+    ]);
+
+    if (errorPrevios) {
+      throw errorPrevios;
     }
 
-    if (fechaHasta) {
-      query = query.lte('fecha', fechaHasta);
-    }
-
-    const { data: movimientos, error: errorMovimientos } = await query;
-
-    if (errorMovimientos) {
-      throw errorMovimientos;
+    if (errorPeriodo) {
+      throw errorPeriodo;
     }
 
     renderResumenFlujos(resumen || {});
-    renderTablaFlujos(movimientos || []);
+    renderTablaFlujosConSaldo(
+      movimientosPrevios || [],
+      movimientosPeriodo || [],
+      fechaInicialCorte
+    );
   } catch (error) {
     console.error('Error buscando flujos:', error);
     alert(error.message || 'Ocurrió un error al consultar los flujos.');
@@ -5207,14 +5228,43 @@ function renderResumenFlujos(resumen) {
     formatearMoneda(resumen.saldo_total_caja || 0);
 }
 
-function renderTablaFlujos(movimientos) {
+function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fechaSaldoInicial) {
   const tabla = document.getElementById('tablaFlujos');
   const body = document.getElementById('tablaFlujosBody');
   const empty = document.getElementById('flujosEmptyState');
 
   body.innerHTML = '';
 
-  if (!movimientos.length) {
+  const saldoInicial = movimientosPrevios.reduce((acc, item) => {
+    return acc + Number(item.monto_signed || 0);
+  }, 0);
+
+  let saldoAcumulado = saldoInicial;
+
+  const filasRender = [];
+
+  filasRender.push({
+    esSaldoInicial: true,
+    fecha: fechaSaldoInicial,
+    tipo_nombre: 'Saldo inicial',
+    fondo: 'GENERAL',
+    naturaleza: 'SALDO',
+    monto: saldoInicial,
+    monto_signed: saldoInicial,
+    observacion: 'Saldo acumulado antes del período consultado',
+    saldo: saldoInicial
+  });
+
+  movimientosPeriodo.forEach(item => {
+    saldoAcumulado += Number(item.monto_signed || 0);
+
+    filasRender.push({
+      ...item,
+      saldo: saldoAcumulado
+    });
+  });
+
+  if (!filasRender.length) {
     tabla.classList.add('hidden');
     empty.textContent = 'No hay movimientos para mostrar.';
     return;
@@ -5223,16 +5273,38 @@ function renderTablaFlujos(movimientos) {
   empty.textContent = '';
   tabla.classList.remove('hidden');
 
-  movimientos.forEach(item => {
+  filasRender.forEach(item => {
     const tr = document.createElement('tr');
+
+    const esIngreso = item.naturaleza === 'INGRESO';
+    const esEgreso = item.naturaleza === 'EGRESO';
+    const esSaldoInicial = item.esSaldoInicial === true;
+
+    const claseMonto = esIngreso
+      ? 'flujo-ingreso'
+      : esEgreso
+        ? 'flujo-egreso'
+        : 'flujo-saldo';
+
+    const montoTexto = formatearMoneda(item.monto || 0);
+    const saldoTexto = formatearMoneda(item.saldo || 0);
 
     tr.innerHTML = `
       <td>${escapeHtml(formatearFechaFactura(item.fecha || ''))}</td>
       <td>${escapeHtml(item.tipo_nombre || '')}</td>
-      <td>${escapeHtml(item.fondo_afectado || '')}</td>
-      <td>${formatearMoneda(item.monto || 0)}</td>
+      <td>${escapeHtml(item.fondo || '')}</td>
+      <td>${escapeHtml(item.naturaleza || '')}</td>
+      <td class="${claseMonto}">
+        ${montoTexto}
+      </td>
+      <td>${escapeHtml(item.factura_codigo || '')}</td>
       <td>${escapeHtml(item.observacion || '')}</td>
+      <td class="flujo-saldo">${saldoTexto}</td>
     `;
+
+    if (esSaldoInicial) {
+      tr.classList.add('row-saldo-inicial');
+    }
 
     body.appendChild(tr);
   });
@@ -5465,4 +5537,15 @@ function actualizarBotonPrincipalTopbar() {
     btn.textContent = '🏠 Inicio';
     btn.classList.add('btn-home');
   }
+}
+
+function restarUnDia(fechaIso) {
+  const fecha = new Date(`${fechaIso}T00:00:00`);
+  fecha.setDate(fecha.getDate() - 1);
+
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, '0');
+  const day = String(fecha.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
