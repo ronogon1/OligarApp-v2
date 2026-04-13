@@ -5199,26 +5199,35 @@ async function buscarFlujos() {
       .order('fecha', { ascending: true })
       .order('created_at', { ascending: true });
 
+    let queryManuales = supabaseClient
+      .from('vw_detalle_flujos_caja')
+      .select('*')
+      .gte('fecha', fechaDesde)
+      .lte('fecha', fechaHasta)
+      .order('fecha', { ascending: true })
+      .order('created_at', { ascending: true });
+
     if (fondo) {
       querySaldoInicial = querySaldoInicial.eq('fondo', fondo);
       queryMovimientos = queryMovimientos.eq('fondo', fondo);
+
+      const fondoManual = fondo === 'DUENA' ? 'Dueña' : 'Negocio';
+      queryManuales = queryManuales.eq('fondo_afectado', fondoManual);
     }
 
     const [
       { data: movimientosPrevios, error: errorPrevios },
-      { data: movimientosPeriodo, error: errorPeriodo }
+      { data: movimientosPeriodo, error: errorPeriodo },
+      { data: movimientosManuales, error: errorManuales }
     ] = await Promise.all([
       querySaldoInicial,
-      queryMovimientos
+      queryMovimientos,
+      queryManuales
     ]);
 
-    if (errorPrevios) {
-      throw errorPrevios;
-    }
-
-    if (errorPeriodo) {
-      throw errorPeriodo;
-    }
+    if (errorPrevios) throw errorPrevios;
+    if (errorPeriodo) throw errorPeriodo;
+    if (errorManuales) throw errorManuales;
 
     renderResumenFlujosFiltrado(
       resumen || {},
@@ -5230,6 +5239,7 @@ async function buscarFlujos() {
     renderTablaFlujosConSaldo(
       movimientosPrevios || [],
       movimientosPeriodo || [],
+      movimientosManuales || [],
       fechaInicialCorte
     );
   } catch (error) {
@@ -5285,7 +5295,12 @@ function renderResumenFlujosFiltrado(resumen, movimientosPrevios, movimientosPer
     formatearMoneda(resumen.saldo_total_caja || 0);
 }
 
-function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fechaSaldoInicial) {
+function renderTablaFlujosConSaldo(
+  movimientosPrevios,
+  movimientosPeriodo,
+  movimientosManuales,
+  fechaSaldoInicial
+) {
   const tabla = document.getElementById('tablaFlujos');
   const body = document.getElementById('tablaFlujosBody');
   const empty = document.getElementById('flujosEmptyState');
@@ -5297,6 +5312,11 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
   }, 0);
 
   let saldoAcumulado = saldoInicial;
+
+  const manualesMap = new Map();
+  (movimientosManuales || []).forEach(item => {
+    manualesMap.set(String(item.id), item);
+  });
 
   const filasRender = [];
 
@@ -5310,16 +5330,63 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
     tipo_nombre: 'Saldo inicial',
     factura_codigo: '',
     observacion: 'Saldo acumulado antes del período consultado',
-    movimiento_retiro_id: null
+    movimiento_retiro_id: null,
+    activo: true
   });
 
   movimientosPeriodo.forEach(item => {
     saldoAcumulado += Number(item.monto_signed || 0);
 
+    let activo = true;
+    let estadoNombre = '';
+
+    if (item.movimiento_retiro_id) {
+      const manual = manualesMap.get(String(item.movimiento_retiro_id));
+      if (manual) {
+        activo = Boolean(manual.activo);
+        estadoNombre = manual.estado_nombre || '';
+      }
+    }
+
     filasRender.push({
       ...item,
-      saldo: saldoAcumulado
+      saldo: saldoAcumulado,
+      activo,
+      estado_nombre: estadoNombre
     });
+  });
+
+  // agregar manuales anulados que no aparecen en vw_flujo_movimientos
+  (movimientosManuales || []).forEach(item => {
+    if (item.activo) return;
+
+    filasRender.push({
+      fecha: item.fecha,
+      fondo: item.fondo_afectado === 'Dueña' ? 'DUENA' : 'NEGOCIO',
+      naturaleza: 'EGRESO',
+      monto: item.monto,
+      saldo: null,
+      tipo_nombre: item.tipo_nombre,
+      factura_codigo: '',
+      observacion: item.observacion || '',
+      movimiento_retiro_id: item.id,
+      activo: false,
+      estado_nombre: item.estado_nombre || 'Anulado',
+      esAnuladoSinImpacto: true
+    });
+  });
+
+  filasRender.sort((a, b) => {
+    const fechaA = a.fecha || '';
+    const fechaB = b.fecha || '';
+
+    if (fechaA !== fechaB) {
+      return fechaA.localeCompare(fechaB);
+    }
+
+    const createdA = a.created_at || '';
+    const createdB = b.created_at || '';
+    return createdA.localeCompare(createdB);
   });
 
   if (!filasRender.length) {
@@ -5338,6 +5405,7 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
     const esEgreso = item.naturaleza === 'EGRESO';
     const esSaldoInicial = item.esSaldoInicial === true;
     const esEditable = Boolean(item.movimiento_retiro_id);
+    const estaActivo = item.activo !== false;
 
     const claseMonto = esIngreso
       ? 'flujo-ingreso'
@@ -5345,9 +5413,11 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
         ? 'flujo-egreso'
         : 'flujo-saldo';
 
-    const accionesHtml = esEditable
-      ? `
-        <div class="flujo-actions">
+    let accionesHtml = '—';
+
+    if (esEditable) {
+      const botonEditar = estaActivo
+        ? `
           <button
             type="button"
             class="table-action-btn btn-editar-flujo"
@@ -5355,7 +5425,11 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
           >
             Editar
           </button>
+        `
+        : '';
 
+      const botonEstado = estaActivo
+        ? `
           <button
             type="button"
             class="table-action-btn btn-anular-flujo"
@@ -5363,28 +5437,50 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
           >
             Anular
           </button>
+        `
+        : `
+          <button
+            type="button"
+            class="table-action-btn btn-activar-flujo"
+            data-movimiento-id="${item.movimiento_retiro_id}"
+          >
+            Activar
+          </button>
+        `;
+
+      accionesHtml = `
+        <div class="flujo-actions">
+          ${botonEditar}
+          ${botonEstado}
         </div>
-      `
-      : '—';
+      `;
+    }
 
     tr.innerHTML = `
       <td>${escapeHtml(formatearFechaFactura(item.fecha || ''))}</td>
       <td>${escapeHtml(item.fondo || '')}</td>
       <td>${escapeHtml(item.naturaleza || '')}</td>
       <td class="monto-cell ${claseMonto}">
-        ${formatearMoneda(item.monto || 0)}
+        ${formatearMontoFactura(item.monto || 0)}
       </td>
       <td class="saldo-cell flujo-saldo">
-        ${formatearMoneda(item.saldo || 0)}
+        ${item.saldo === null ? '—' : formatearMontoFactura(item.saldo)}
       </td>
       <td>${accionesHtml}</td>
       <td>${escapeHtml(item.tipo_nombre || '')}</td>
       <td>${escapeHtml(item.factura_codigo || '')}</td>
-      <td>${escapeHtml(item.observacion || '')}</td>
+      <td>
+        ${escapeHtml(item.observacion || '')}
+        ${item.estado_nombre ? `<div class="helper-text">${escapeHtml(item.estado_nombre)}</div>` : ''}
+      </td>
     `;
 
     if (esSaldoInicial) {
       tr.classList.add('row-saldo-inicial');
+    }
+
+    if (!estaActivo && !esSaldoInicial) {
+      tr.classList.add('row-anulada');
     }
 
     body.appendChild(tr);
@@ -5398,7 +5494,13 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
 
   body.querySelectorAll('.btn-anular-flujo').forEach(btn => {
     btn.addEventListener('click', () => {
-      inactivarMovimientoFlujo(btn.dataset.movimientoId);
+      cambiarEstadoMovimientoFlujo(btn.dataset.movimientoId, false);
+    });
+  });
+
+  body.querySelectorAll('.btn-activar-flujo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cambiarEstadoMovimientoFlujo(btn.dataset.movimientoId, true);
     });
   });
 }
@@ -5638,6 +5740,35 @@ async function inactivarMovimientoFlujo(movimientoId) {
     alert(error.message || 'No fue posible anular el movimiento.');
   }
 }
+
+async function cambiarEstadoMovimientoFlujo(movimientoId, activar) {
+  try {
+    const mensaje = activar
+      ? '¿Deseas activar nuevamente este movimiento?'
+      : '¿Deseas anular este movimiento? Dejará de afectar los saldos.';
+
+    const confirmado = confirm(mensaje);
+    if (!confirmado) return;
+
+    const { error } = await supabaseClient
+      .from('movimientos_retiro')
+      .update({
+        activo: activar
+      })
+      .eq('id', movimientoId);
+
+    if (error) {
+      throw error;
+    }
+
+    alert(`Movimiento ${activar ? 'activado' : 'anulado'} correctamente.`);
+    await buscarFlujos();
+  } catch (error) {
+    console.error('Error cambiando estado del movimiento:', error);
+    alert(error.message || 'No fue posible cambiar el estado del movimiento.');
+  }
+}
+
 
 /* SECCIÓN GRÁFICOS
 ========================= */
