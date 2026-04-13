@@ -5158,6 +5158,7 @@ function inicializarVistaFlujos() {
 function limpiarFormularioFlujo() {
   document.getElementById('flujoFecha').value = obtenerFechaHoy();
   document.getElementById('flujoTipo').value = '';
+  document.getElementById('flujoOrigen').value = '';
   document.getElementById('flujoMonto').value = '';
   document.getElementById('flujoObservacion').value = '';
 }
@@ -5167,6 +5168,7 @@ async function buscarFlujos() {
     const fechaDesde = document.getElementById('filtroFlujoFechaDesde').value;
     const fechaHasta = document.getElementById('filtroFlujoFechaHasta').value;
     const fondo = document.getElementById('filtroFlujoFondo').value;
+    const origenCodigo = document.getElementById('filtroFlujoOrigen').value;
 
     if (!fechaDesde || !fechaHasta) {
       alert('Debes indicar Fecha desde y Fecha hasta.');
@@ -5213,6 +5215,12 @@ async function buscarFlujos() {
 
       const fondoManual = fondo === 'DUENA' ? 'Dueña' : 'Negocio';
       queryManuales = queryManuales.eq('fondo_afectado', fondoManual);
+    }
+
+    if (origenCodigo) {
+      querySaldoInicial = querySaldoInicial.eq('origen_codigo', origenCodigo);
+      queryMovimientos = queryMovimientos.eq('origen_codigo', origenCodigo);
+      queryManuales = queryManuales.eq('origen_codigo', origenCodigo);
     }
 
     const [
@@ -5510,6 +5518,7 @@ async function guardarMovimientoFlujo() {
     const idEdicion = document.getElementById('flujoIdEdicion').value.trim();
     const fecha = document.getElementById('flujoFecha').value;
     const tipo = document.getElementById('flujoTipo').value;
+    const origenCodigo = document.getElementById('flujoOrigen').value || null;
     const monto = redondear2(
       parseFloat(document.getElementById('flujoMonto').value || '0')
     );
@@ -5546,6 +5555,7 @@ async function guardarMovimientoFlujo() {
         .update({
           fecha,
           tipo_movimiento: tipo,
+          origen_codigo: origenCodigo,
           monto,
           observacion: observacion || null
         })
@@ -5563,6 +5573,7 @@ async function guardarMovimientoFlujo() {
           {
             fecha,
             tipo_movimiento: tipo,
+            origen_codigo: origenCodigo,
             monto,
             observacion: observacion || null,
             activo: true
@@ -5687,7 +5698,7 @@ async function cargarMovimientoFlujoEnFormulario(movimientoId) {
   try {
     const { data, error } = await supabaseClient
       .from('movimientos_retiro')
-      .select('id, fecha, tipo_movimiento, monto, observacion, activo')
+      .select('id, fecha, tipo_movimiento, origen_codigo, monto, observacion, activo')
       .eq('id', movimientoId)
       .single();
 
@@ -5698,6 +5709,7 @@ async function cargarMovimientoFlujoEnFormulario(movimientoId) {
     document.getElementById('flujoIdEdicion').value = data.id || '';
     document.getElementById('flujoFecha').value = data.fecha || '';
     document.getElementById('flujoTipo').value = data.tipo_movimiento || '';
+    document.getElementById('flujoOrigen').value = data.origen_codigo || '';
     document.getElementById('flujoMonto').value = Number(data.monto || 0);
     document.getElementById('flujoObservacion').value = data.observacion || '';
 
