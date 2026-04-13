@@ -1669,3 +1669,32 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
   border-color: #b3261e;
   color: #b3261e;
 }
+
+
+/* AJUSTES PARA LA SECCIÓN SOBRE LA APP */
+
+.about-app-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.about-app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.about-app-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 18px;
+}
+
+.about-app-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
