@@ -1588,3 +1588,42 @@ FORMATO DE TEXTAREA Y CHECKBOX PARA SECCIÓN CLIENTES
 .row-saldo-inicial {
   background: rgba(0, 0, 0, 0.04);
 }
+.text-right {
+  text-align: right;
+}
+
+.monto-cell,
+.saldo-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.flujo-ingreso {
+  color: #1b8a3d;
+  font-weight: 700;
+}
+
+.flujo-egreso {
+  color: #b3261e;
+  font-weight: 700;
+}
+
+.flujo-saldo {
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row-saldo-inicial {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.flujo-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.flujo-actions .table-action-btn {
+  white-space: nowrap;
+}

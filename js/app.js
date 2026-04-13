@@ -126,6 +126,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('filtroFlujoMes')
   ?.addEventListener('change', sincronizarFechasFlujoDesdeMes);
 
+  document.getElementById('btnToggleFormularioFlujo')
+    ?.addEventListener('click', toggleFormularioFlujo);
+
+  document.getElementById('btnCancelarEdicionFlujo')
+    ?.addEventListener('click', cancelarEdicionFlujo);
+
   configurarMenuMovil();
   configurarOrigenVenta();
   manejarCambioTipoReporte();
@@ -5297,13 +5303,14 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
   filasRender.push({
     esSaldoInicial: true,
     fecha: fechaSaldoInicial,
-    tipo_nombre: 'Saldo inicial',
     fondo: 'GENERAL',
     naturaleza: 'SALDO',
     monto: saldoInicial,
-    monto_signed: saldoInicial,
+    saldo: saldoInicial,
+    tipo_nombre: 'Saldo inicial',
+    factura_codigo: '',
     observacion: 'Saldo acumulado antes del período consultado',
-    saldo: saldoInicial
+    movimiento_retiro_id: null
   });
 
   movimientosPeriodo.forEach(item => {
@@ -5330,6 +5337,7 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
     const esIngreso = item.naturaleza === 'INGRESO';
     const esEgreso = item.naturaleza === 'EGRESO';
     const esSaldoInicial = item.esSaldoInicial === true;
+    const esEditable = Boolean(item.movimiento_retiro_id);
 
     const claseMonto = esIngreso
       ? 'flujo-ingreso'
@@ -5337,20 +5345,42 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
         ? 'flujo-egreso'
         : 'flujo-saldo';
 
-    const montoTexto = formatearMoneda(item.monto || 0);
-    const saldoTexto = formatearMoneda(item.saldo || 0);
+    const accionesHtml = esEditable
+      ? `
+        <div class="flujo-actions">
+          <button
+            type="button"
+            class="table-action-btn btn-editar-flujo"
+            data-movimiento-id="${item.movimiento_retiro_id}"
+          >
+            Editar
+          </button>
+
+          <button
+            type="button"
+            class="table-action-btn btn-anular-flujo"
+            data-movimiento-id="${item.movimiento_retiro_id}"
+          >
+            Anular
+          </button>
+        </div>
+      `
+      : '—';
 
     tr.innerHTML = `
       <td>${escapeHtml(formatearFechaFactura(item.fecha || ''))}</td>
-      <td>${escapeHtml(item.tipo_nombre || '')}</td>
       <td>${escapeHtml(item.fondo || '')}</td>
       <td>${escapeHtml(item.naturaleza || '')}</td>
-      <td class="${claseMonto}">
-        ${montoTexto}
+      <td class="monto-cell ${claseMonto}">
+        ${formatearMoneda(item.monto || 0)}
       </td>
+      <td class="saldo-cell flujo-saldo">
+        ${formatearMoneda(item.saldo || 0)}
+      </td>
+      <td>${accionesHtml}</td>
+      <td>${escapeHtml(item.tipo_nombre || '')}</td>
       <td>${escapeHtml(item.factura_codigo || '')}</td>
       <td>${escapeHtml(item.observacion || '')}</td>
-      <td class="flujo-saldo">${saldoTexto}</td>
     `;
 
     if (esSaldoInicial) {
@@ -5359,10 +5389,23 @@ function renderTablaFlujosConSaldo(movimientosPrevios, movimientosPeriodo, fecha
 
     body.appendChild(tr);
   });
+
+  body.querySelectorAll('.btn-editar-flujo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cargarMovimientoFlujoEnFormulario(btn.dataset.movimientoId);
+    });
+  });
+
+  body.querySelectorAll('.btn-anular-flujo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      inactivarMovimientoFlujo(btn.dataset.movimientoId);
+    });
+  });
 }
 
 async function guardarMovimientoFlujo() {
   try {
+    const idEdicion = document.getElementById('flujoIdEdicion').value.trim();
     const fecha = document.getElementById('flujoFecha').value;
     const tipo = document.getElementById('flujoTipo').value;
     const monto = redondear2(
@@ -5393,26 +5436,45 @@ async function guardarMovimientoFlujo() {
 
     const btn = document.getElementById('btnGuardarFlujo');
     btn.disabled = true;
-    btn.textContent = 'Guardando...';
+    btn.textContent = idEdicion ? 'Guardando cambios...' : 'Guardando...';
 
-    const { error } = await supabaseClient
-      .from('movimientos_retiro')
-      .insert([
-        {
+    if (idEdicion) {
+      const { error } = await supabaseClient
+        .from('movimientos_retiro')
+        .update({
           fecha,
           tipo_movimiento: tipo,
           monto,
-          observacion: observacion || null,
-          activo: true
-        }
-      ]);
+          observacion: observacion || null
+        })
+        .eq('id', idEdicion);
 
-    if (error) {
-      throw error;
+      if (error) {
+        throw error;
+      }
+
+      alert('Movimiento actualizado correctamente.');
+    } else {
+      const { error } = await supabaseClient
+        .from('movimientos_retiro')
+        .insert([
+          {
+            fecha,
+            tipo_movimiento: tipo,
+            monto,
+            observacion: observacion || null,
+            activo: true
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('Movimiento guardado correctamente.');
     }
 
-    alert('Movimiento guardado correctamente.');
-    limpiarFormularioFlujo();
+    cancelarEdicionFlujo();
     await buscarFlujos();
   } catch (error) {
     console.error('Error guardando movimiento de flujo:', error);
@@ -5421,7 +5483,9 @@ async function guardarMovimientoFlujo() {
     const btn = document.getElementById('btnGuardarFlujo');
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'Guardar';
+      btn.textContent = document.getElementById('flujoIdEdicion').value.trim()
+        ? 'Guardar cambios'
+        : 'Guardar';
     }
   }
 }
@@ -5464,6 +5528,115 @@ function sincronizarFechasFlujoDesdeMes() {
 
   inputDesde.value = obtenerPrimerDiaMesFlujo(mes);
   inputHasta.value = obtenerUltimoDiaMesFlujo(mes);
+}
+
+function toggleFormularioFlujo() {
+  const panel = document.getElementById('flujoFormPanel');
+  const btn = document.getElementById('btnToggleFormularioFlujo');
+
+  if (!panel || !btn) return;
+
+  const estaOculto = panel.classList.contains('hidden');
+
+  if (estaOculto) {
+    panel.classList.remove('hidden');
+    btn.textContent = '− Ocultar';
+  } else {
+    panel.classList.add('hidden');
+    btn.textContent = '+ Nuevo';
+    cancelarEdicionFlujo();
+  }
+}
+
+function abrirFormularioFlujo() {
+  const panel = document.getElementById('flujoFormPanel');
+  const btn = document.getElementById('btnToggleFormularioFlujo');
+
+  if (panel) {
+    panel.classList.remove('hidden');
+  }
+
+  if (btn) {
+    btn.textContent = '− Ocultar';
+  }
+}
+
+function cerrarFormularioFlujo() {
+  const panel = document.getElementById('flujoFormPanel');
+  const btn = document.getElementById('btnToggleFormularioFlujo');
+
+  if (panel) {
+    panel.classList.add('hidden');
+  }
+
+  if (btn) {
+    btn.textContent = '+ Nuevo';
+  }
+}
+
+function cancelarEdicionFlujo() {
+  document.getElementById('flujoIdEdicion').value = '';
+  document.getElementById('btnGuardarFlujo').textContent = 'Guardar';
+  document.getElementById('btnCancelarEdicionFlujo').classList.add('hidden');
+  limpiarFormularioFlujo();
+}
+
+async function cargarMovimientoFlujoEnFormulario(movimientoId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('movimientos_retiro')
+      .select('id, fecha, tipo_movimiento, monto, observacion, activo')
+      .eq('id', movimientoId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    document.getElementById('flujoIdEdicion').value = data.id || '';
+    document.getElementById('flujoFecha').value = data.fecha || '';
+    document.getElementById('flujoTipo').value = data.tipo_movimiento || '';
+    document.getElementById('flujoMonto').value = Number(data.monto || 0);
+    document.getElementById('flujoObservacion').value = data.observacion || '';
+
+    document.getElementById('btnGuardarFlujo').textContent = 'Guardar cambios';
+    document.getElementById('btnCancelarEdicionFlujo').classList.remove('hidden');
+
+    abrirFormularioFlujo();
+
+    document.getElementById('flujoFormPanel')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    console.error('Error cargando movimiento para edición:', error);
+    alert(error.message || 'No fue posible cargar el movimiento.');
+  }
+}
+
+async function inactivarMovimientoFlujo(movimientoId) {
+  try {
+    const confirmado = confirm(
+      '¿Deseas anular este movimiento? Dejará de afectar los saldos.'
+    );
+
+    if (!confirmado) return;
+
+    const { error } = await supabaseClient
+      .from('movimientos_retiro')
+      .update({
+        activo: false
+      })
+      .eq('id', movimientoId);
+
+    if (error) {
+      throw error;
+    }
+
+    alert('Movimiento anulado correctamente.');
+    await buscarFlujos();
+  } catch (error) {
+    console.error('Error anulando movimiento:', error);
+    alert(error.message || 'No fue posible anular el movimiento.');
+  }
 }
 
 /* SECCIÓN GRÁFICOS

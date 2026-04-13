@@ -1218,45 +1218,64 @@
 
           <!-- REGISTRO -->
           <div class="module-subcard">
-            <h3>Registrar movimiento de egreso</h3>
-
-            <div class="venta-grid">
-              <div class="field-group">
-                <label for="flujoFecha">Fecha</label>
-                <input type="date" id="flujoFecha">
+            <div class="module-header module-header-flex">
+              <div>
+                <h3>Registrar movimiento de egreso</h3>
+                <p class="helper-text">
+                  Registra retiros o reinversiones manuales.
+                </p>
               </div>
 
-              <div class="field-group">
-                <label for="flujoTipo">Tipo</label>
-                <select id="flujoTipo">
-                  <option value="">Selecciona</option>
-                  <option value="MO">Retiro mano de obra</option>
-                  <option value="UTILIDAD">Retiro utilidad</option>
-                  <option value="REINVERSION">Reinversión</option>
-                </select>
-              </div>
+              <button type="button" id="btnToggleFormularioFlujo" class="btn-secondary">
+                + Nuevo
+              </button>
             </div>
 
-            <div class="venta-grid">
-              <div class="field-group">
-                <label for="flujoMonto">Monto</label>
-                <input type="number" id="flujoMonto" min="0" step="0.01">
+            <div id="flujoFormPanel" class="hidden">
+              <input type="hidden" id="flujoIdEdicion">
+
+              <div class="venta-grid">
+                <div class="field-group">
+                  <label for="flujoFecha">Fecha</label>
+                  <input type="date" id="flujoFecha">
+                </div>
+
+                <div class="field-group">
+                  <label for="flujoTipo">Tipo</label>
+                  <select id="flujoTipo">
+                    <option value="">Selecciona</option>
+                    <option value="MO">Retiro mano de obra</option>
+                    <option value="UTILIDAD">Retiro utilidad</option>
+                    <option value="REINVERSION">Reinversión</option>
+                  </select>
+                </div>
               </div>
 
-              <div class="field-group">
-                <label for="flujoObservacion">Observación</label>
-                <input type="text" id="flujoObservacion">
+              <div class="venta-grid">
+                <div class="field-group">
+                  <label for="flujoMonto">Monto</label>
+                  <input type="number" id="flujoMonto" min="0" step="0.01">
+                </div>
+
+                <div class="field-group">
+                  <label for="flujoObservacion">Observación</label>
+                  <input type="text" id="flujoObservacion">
+                </div>
               </div>
-            </div>
 
-            <div class="module-actions">
-              <button type="button" id="btnGuardarFlujo" class="btn-confirm">
-                Guardar
-              </button>
+              <div class="module-actions">
+                <button type="button" id="btnGuardarFlujo" class="btn-confirm">
+                  Guardar
+                </button>
 
-              <button type="button" id="btnLimpiarFlujo" class="btn-clear-form">
-                Limpiar
-              </button>
+                <button type="button" id="btnLimpiarFlujo" class="btn-clear-form">
+                  Limpiar
+                </button>
+
+                <button type="button" id="btnCancelarEdicionFlujo" class="btn-secondary hidden">
+                  Cancelar edición
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1273,13 +1292,14 @@
                 <thead>
                   <tr>
                     <th>Fecha</th>
-                    <th>Tipo</th>
                     <th>Fondo</th>
                     <th>Naturaleza</th>
-                    <th>Monto</th>
+                    <th class="text-right">Monto</th>
+                    <th class="text-right">Saldo</th>
+                    <th>Acciones</th>
+                    <th>Tipo</th>
                     <th>Factura</th>
                     <th>Observación</th>
-                    <th>Saldo</th>
                   </tr>
                 </thead>
                 <tbody id="tablaFlujosBody"></tbody>
