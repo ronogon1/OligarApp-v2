@@ -1732,6 +1732,7 @@ function setEstadoBotonGuardar(guardando) {
 async function guardarVentaDesdeFormulario() {
   try {
     setEstadoBotonGuardar(true);
+    mostrarLoadingOverlay('Guardando venta...');
 
     await cargarCatalogosVenta();
 
@@ -1761,6 +1762,7 @@ async function guardarVentaDesdeFormulario() {
     alert(error.message || 'Ocurrió un error al guardar la venta.');
   } finally {
     setEstadoBotonGuardar(false);
+    ocultarLoadingOverlay();
   }
 }
 
@@ -3043,6 +3045,8 @@ async function reemplazarDetalleYCostosEdicion(
 
 async function guardarCambiosFactura() {
   try {
+    mostrarLoadingOverlay('Guardando venta...');
+
     if (!facturaEdicionActual?.factura?.id) {
       throw new Error('No hay una factura cargada para editar.');
     }
@@ -3077,6 +3081,7 @@ async function guardarCambiosFactura() {
     alert(error.message || 'No fue posible guardar los cambios de la factura.');
   } finally {
     setEstadoBotonGuardarEdicion(false);
+    ocultarLoadingOverlay();
   }
 }
 
@@ -5953,4 +5958,20 @@ function restarUnDia(fechaIso) {
   const day = String(fecha.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
+}
+
+function mostrarLoadingOverlay(texto = 'Procesando...') {
+  const overlay = document.getElementById('loadingOverlay');
+  const label = document.getElementById('loadingOverlayText');
+
+  if (label) {
+    label.textContent = texto;
+  }
+
+  overlay?.classList.remove('hidden');
+}
+
+function ocultarLoadingOverlay() {
+  document.getElementById('loadingOverlay')
+    ?.classList.add('hidden');
 }
