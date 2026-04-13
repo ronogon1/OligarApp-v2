@@ -123,6 +123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnLimpiarFlujo')
     ?.addEventListener('click', limpiarFormularioFlujo);
 
+  document.getElementById('filtroFlujoMes')
+  ?.addEventListener('change', sincronizarFechasFlujoDesdeMes);
+
   configurarMenuMovil();
   configurarOrigenVenta();
   manejarCambioTipoReporte();
@@ -5127,22 +5130,22 @@ function inicializarFiltrosReporte() {
 ========================= */
 
 function inicializarVistaFlujos() {
-  const fechaHoy = obtenerFechaHoy();
-
   const fecha = document.getElementById('flujoFecha');
-  const desde = document.getElementById('filtroFlujoFechaDesde');
-  const hasta = document.getElementById('filtroFlujoFechaHasta');
+  const inputMes = document.getElementById('filtroFlujoMes');
+  const fondo = document.getElementById('filtroFlujoFondo');
 
   if (fecha && !fecha.value) {
-    fecha.value = fechaHoy;
+    fecha.value = obtenerFechaHoy();
   }
 
-  if (desde && !desde.value) {
-    desde.value = fechaHoy.slice(0, 8) + '01';
+  if (inputMes && !inputMes.value) {
+    inputMes.value = obtenerMesActualFlujo();
   }
 
-  if (hasta && !hasta.value) {
-    hasta.value = fechaHoy;
+  sincronizarFechasFlujoDesdeMes();
+
+  if (fondo && !fondo.value) {
+    fondo.value = '';
   }
 }
 
@@ -5157,6 +5160,7 @@ async function buscarFlujos() {
   try {
     const fechaDesde = document.getElementById('filtroFlujoFechaDesde').value;
     const fechaHasta = document.getElementById('filtroFlujoFechaHasta').value;
+    const fondo = document.getElementById('filtroFlujoFondo').value;
 
     if (!fechaDesde || !fechaHasta) {
       alert('Debes indicar Fecha desde y Fecha hasta.');
@@ -5189,6 +5193,11 @@ async function buscarFlujos() {
       .order('fecha', { ascending: true })
       .order('created_at', { ascending: true });
 
+    if (fondo) {
+      querySaldoInicial = querySaldoInicial.eq('fondo', fondo);
+      queryMovimientos = queryMovimientos.eq('fondo', fondo);
+    }
+
     const [
       { data: movimientosPrevios, error: errorPrevios },
       { data: movimientosPeriodo, error: errorPeriodo }
@@ -5205,7 +5214,13 @@ async function buscarFlujos() {
       throw errorPeriodo;
     }
 
-    renderResumenFlujos(resumen || {});
+    renderResumenFlujosFiltrado(
+      resumen || {},
+      movimientosPrevios || [],
+      movimientosPeriodo || [],
+      fondo
+    );
+
     renderTablaFlujosConSaldo(
       movimientosPrevios || [],
       movimientosPeriodo || [],
@@ -5217,7 +5232,43 @@ async function buscarFlujos() {
   }
 }
 
-function renderResumenFlujos(resumen) {
+function renderResumenFlujosFiltrado(resumen, movimientosPrevios, movimientosPeriodo, fondo) {
+  const todos = [...movimientosPrevios, ...movimientosPeriodo];
+
+  const saldoFiltrado = todos.reduce((acc, item) => {
+    return acc + Number(item.monto_signed || 0);
+  }, 0);
+
+  if (fondo === 'DUENA') {
+    const moRetirada = todos
+      .filter(item => item.tipo_movimiento === 'MO' && item.naturaleza === 'EGRESO')
+      .reduce((acc, item) => acc + Number(item.monto || 0), 0);
+
+    document.getElementById('flujoSaldoDuena').textContent =
+      formatearMoneda(saldoFiltrado);
+
+    document.getElementById('flujoSaldoNegocio').textContent =
+      formatearMoneda(0);
+
+    document.getElementById('flujoSaldoTotal').textContent =
+      formatearMoneda(saldoFiltrado);
+
+    return;
+  }
+
+  if (fondo === 'NEGOCIO') {
+    document.getElementById('flujoSaldoDuena').textContent =
+      formatearMoneda(0);
+
+    document.getElementById('flujoSaldoNegocio').textContent =
+      formatearMoneda(saldoFiltrado);
+
+    document.getElementById('flujoSaldoTotal').textContent =
+      formatearMoneda(saldoFiltrado);
+
+    return;
+  }
+
   document.getElementById('flujoSaldoDuena').textContent =
     formatearMoneda(resumen.saldo_duena || 0);
 
@@ -5375,7 +5426,45 @@ async function guardarMovimientoFlujo() {
   }
 }
 
+function obtenerMesActualFlujo() {
+  const hoy = new Date();
+  const year = hoy.getFullYear();
+  const month = String(hoy.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
 
+function obtenerPrimerDiaMesFlujo(periodoMes) {
+  if (!periodoMes || !periodoMes.includes('-')) {
+    return '';
+  }
+
+  return `${periodoMes}-01`;
+}
+
+function obtenerUltimoDiaMesFlujo(periodoMes) {
+  if (!periodoMes || !periodoMes.includes('-')) {
+    return '';
+  }
+
+  const [year, month] = periodoMes.split('-').map(Number);
+  const ultimoDia = new Date(year, month, 0);
+  const day = String(ultimoDia.getDate()).padStart(2, '0');
+
+  return `${periodoMes}-${day}`;
+}
+
+function sincronizarFechasFlujoDesdeMes() {
+  const mes = document.getElementById('filtroFlujoMes')?.value || '';
+  const inputDesde = document.getElementById('filtroFlujoFechaDesde');
+  const inputHasta = document.getElementById('filtroFlujoFechaHasta');
+
+  if (!mes || !inputDesde || !inputHasta) {
+    return;
+  }
+
+  inputDesde.value = obtenerPrimerDiaMesFlujo(mes);
+  inputHasta.value = obtenerUltimoDiaMesFlujo(mes);
+}
 
 /* SECCIÓN GRÁFICOS
 ========================= */
