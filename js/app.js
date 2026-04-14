@@ -2391,6 +2391,7 @@ function renderPagosEdicion(pagos) {
 
   pagos.forEach((item, index) => {
     agregarFilaPagoEdicion({
+      pagoIdOriginal: item.id || '',
       fecha: item.fecha || '',
       monto: Number(item.monto || 0),
       metodo: item.metodos_pago?.nombre || '',
@@ -2516,6 +2517,8 @@ function agregarFilaPagoEdicion(data = {}, index = null) {
 
   const row = document.createElement('div');
   row.className = 'pago-row';
+  row.dataset.pagoIdOriginal = data.pagoIdOriginal || '';
+  row.dataset.notaOriginal = data.nota || '';
 
   row.innerHTML = `
     <div class="item-card">
@@ -2727,10 +2730,11 @@ function obtenerPagosEdicionFormulario() {
 
     return {
       index: index + 1,
+      pagoIdOriginal: row.dataset.pagoIdOriginal || '',
       fecha,
       monto,
       metodo,
-      nota: null
+      nota: row.dataset.notaOriginal || null
     };
   });
 }
@@ -2873,6 +2877,21 @@ async function actualizarFacturaEncabezado(facturaId, data, clienteId) {
     throw new Error(`No se encontró el origen ${data.origenCodigo}.`);
   }
 
+  const estadoActualCodigo =
+    facturaEdicionActual?.factura?.estados_factura?.codigo || '';
+
+  let estadoFacturaId = null;
+
+  if (estadoActualCodigo !== 'ANU') {
+    estadoFacturaId = data.saldoPendiente <= 0
+      ? ventaCatalogos.estadoCanceladaId
+      : ventaCatalogos.estadoSaldoPendienteId;
+
+    if (!estadoFacturaId) {
+      throw new Error('No fue posible determinar el estado de la factura.');
+    }
+  }
+
   const updatePayload = {
     fecha: data.fechaVenta,
     cliente_id: clienteId,
@@ -2883,6 +2902,10 @@ async function actualizarFacturaEncabezado(facturaId, data, clienteId) {
     pagado: data.pagado,
     origen_factura_id: origenFacturaId
   };
+
+  if (estadoActualCodigo !== 'ANU') {
+    updatePayload.estado_factura_id = estadoFacturaId;
+  }
 
   const clienteOriginalId = document.getElementById(
     'edicionFacturaClienteIdOriginal'
@@ -2901,25 +2924,42 @@ async function actualizarFacturaEncabezado(facturaId, data, clienteId) {
   if (error) throw error;
 }
 
-async function reemplazarPagosFacturaEdicion(facturaId, clienteId, pagos) {
-  const { error: deleteError } = await supabaseClient
-    .from('pagos_factura')
-    .delete()
-    .eq('factura_id', facturaId);
+function construirMapPorProductoId(items = []) {
+  const map = new Map();
 
-  if (deleteError) throw deleteError;
+  items.forEach(item => {
+    const productoId = item?.producto_id || item?.productoId || item?.productos?.id;
 
-  await insertarPagosFactura(facturaId, clienteId, pagos);
+    if (productoId) {
+      map.set(productoId, item);
+    }
+  });
+
+  return map;
 }
 
-async function reemplazarDetalleYCostosEdicion(
-  facturaId,
-  productos,
-  origenCodigo
-) {
-  const costosPreviosMap = await obtenerCostosFacturaMap(facturaId);
+function calcularPayloadCostoDesdePrevio(costoPrevio, detalleFacturaId, cantidad) {
+  const moUnit = redondear2(Number(costoPrevio.mo_unitario || 0));
+  const materialesUnit = redondear2(Number(costoPrevio.materiales_unitario || 0));
+  const costoUnit = redondear2(moUnit + materialesUnit);
+  const totalMo = redondear2(cantidad * moUnit);
+  const totalMateriales = redondear2(cantidad * materialesUnit);
+  const totalCosto = redondear2(cantidad * costoUnit);
 
-  const { data: detallesPrevios, error: errorPrevios } = await supabaseClient
+  return {
+    detalle_factura_id: detalleFacturaId,
+    cantidad,
+    mo_unitario: moUnit,
+    materiales_unitario: materialesUnit,
+    costo_unitario: costoUnit,
+    total_mo: totalMo,
+    total_materiales: totalMateriales,
+    total_costo: totalCosto
+  };
+}
+
+async function sincronizarDetalleYCostosEdicion(facturaId, productos, origenCodigo) {
+  const { data: detallesPrevios, error: errorDetallesPrevios } = await supabaseClient
     .from('detalle_factura')
     .select(`
       id,
@@ -2933,119 +2973,239 @@ async function reemplazarDetalleYCostosEdicion(
     `)
     .eq('factura_id', facturaId);
 
-  if (errorPrevios) throw errorPrevios;
+  if (errorDetallesPrevios) throw errorDetallesPrevios;
 
-  const imagenesPreviasMap = new Map();
-  (detallesPrevios || []).forEach(item => {
-    if (item.producto_id) {
-      imagenesPreviasMap.set(item.producto_id, item.imagen_producto || null);
-    }
-  });
-
-  const { error: deleteCostosError } = await supabaseClient
+  const { data: costosPrevios, error: errorCostosPrevios } = await supabaseClient
     .from('costos_producto')
-    .delete()
+    .select(`
+      id,
+      factura_id,
+      detalle_factura_id,
+      producto_id,
+      cantidad,
+      mo_unitario,
+      materiales_unitario,
+      costo_unitario,
+      total_mo,
+      total_materiales,
+      total_costo,
+      observacion
+    `)
     .eq('factura_id', facturaId);
 
-  if (deleteCostosError) throw deleteCostosError;
+  if (errorCostosPrevios) throw errorCostosPrevios;
 
-  const { error: deleteDetallesError } = await supabaseClient
-    .from('detalle_factura')
-    .delete()
-    .eq('factura_id', facturaId);
+  const detallesPreviosMap = construirMapPorProductoId(detallesPrevios || []);
+  const costosPreviosMap = construirMapPorProductoId(costosPrevios || []);
 
-  if (deleteDetallesError) throw deleteDetallesError;
-
-  const detallesInsert = [];
+  const productosValidos = [];
 
   for (const item of productos) {
     if (!item.nombre) continue;
 
     const producto = await obtenerProductoId(item, origenCodigo);
 
-    let imagenProducto = imagenesPreviasMap.get(producto.id) || null;
-
-    if (!imagenProducto) {
-      imagenProducto = await sincronizarImagenProducto(item, producto);
-    }
-
-    detallesInsert.push({
-      factura_id: facturaId,
-      producto_id: producto.id,
-      cantidad: item.cantidad,
-      precio_unit: item.precioUnit,
-      desc_prod: item.descuento,
-      subtotal: item.subtotal,
-      imagen_producto: imagenProducto || null
+    productosValidos.push({
+      ...item,
+      productoId: producto.id,
+      productoCodigo: producto.producto_codigo || '',
+      imagenUrlProducto: producto.imagen_url || ''
     });
-
-    item.productoId = producto.id;
-    item.productoCodigo = producto.producto_codigo || '';
-    item.imagenUrl = imagenProducto || producto.imagen_url || '';
   }
 
-  if (!detallesInsert.length) {
-    return;
+  const productosActualesMap = construirMapPorProductoId(productosValidos);
+
+  for (const item of productosValidos) {
+    const detallePrevio = detallesPreviosMap.get(item.productoId);
+    const costoPrevio = costosPreviosMap.get(item.productoId);
+
+    if (detallePrevio) {
+      const imagenProducto =
+        detallePrevio.imagen_producto ||
+        item.imagenUrlProducto ||
+        null;
+
+      const { error: updateDetalleError } = await supabaseClient
+        .from('detalle_factura')
+        .update({
+          cantidad: item.cantidad,
+          precio_unit: item.precioUnit,
+          desc_prod: item.descuento,
+          subtotal: item.subtotal,
+          imagen_producto: imagenProducto
+        })
+        .eq('id', detallePrevio.id);
+
+      if (updateDetalleError) throw updateDetalleError;
+
+      if (costoPrevio) {
+        const costoPayload = calcularPayloadCostoDesdePrevio(
+          costoPrevio,
+          detallePrevio.id,
+          item.cantidad
+        );
+
+        const { error: updateCostoError } = await supabaseClient
+          .from('costos_producto')
+          .update(costoPayload)
+          .eq('id', costoPrevio.id);
+
+        if (updateCostoError) throw updateCostoError;
+      }
+    } else {
+      const imagenProducto = item.imagenUrlProducto || null;
+
+      const { data: nuevoDetalle, error: insertDetalleError } = await supabaseClient
+        .from('detalle_factura')
+        .insert([{
+          factura_id: facturaId,
+          producto_id: item.productoId,
+          cantidad: item.cantidad,
+          precio_unit: item.precioUnit,
+          desc_prod: item.descuento,
+          subtotal: item.subtotal,
+          imagen_producto: imagenProducto
+        }])
+        .select(`
+          id,
+          factura_id,
+          producto_id,
+          cantidad,
+          precio_unit,
+          desc_prod,
+          subtotal,
+          imagen_producto
+        `)
+        .single();
+
+      if (insertDetalleError) throw insertDetalleError;
+
+      const costoPrevioMismoProducto = costosPreviosMap.get(item.productoId);
+
+      if (costoPrevioMismoProducto) {
+        const costoPayload = calcularPayloadCostoDesdePrevio(
+          costoPrevioMismoProducto,
+          nuevoDetalle.id,
+          item.cantidad
+        );
+
+        const { error: insertCostoError } = await supabaseClient
+          .from('costos_producto')
+          .insert([{
+            factura_id: facturaId,
+            detalle_factura_id: nuevoDetalle.id,
+            producto_id: item.productoId,
+            observacion: costoPrevioMismoProducto.observacion || null,
+            ...costoPayload
+          }]);
+
+        if (insertCostoError) throw insertCostoError;
+      }
+    }
   }
 
-  const { data: detallesNuevos, error: insertDetallesError } = await supabaseClient
-    .from('detalle_factura')
-    .insert(detallesInsert)
+  for (const detallePrevio of detallesPrevios || []) {
+    if (!productosActualesMap.has(detallePrevio.producto_id)) {
+      const costoPrevio = costosPreviosMap.get(detallePrevio.producto_id);
+
+      if (costoPrevio) {
+        const { error: deleteCostoError } = await supabaseClient
+          .from('costos_producto')
+          .delete()
+          .eq('id', costoPrevio.id);
+
+        if (deleteCostoError) throw deleteCostoError;
+      }
+
+      const { error: deleteDetalleError } = await supabaseClient
+        .from('detalle_factura')
+        .delete()
+        .eq('id', detallePrevio.id);
+
+      if (deleteDetalleError) throw deleteDetalleError;
+    }
+  }
+}
+
+async function sincronizarPagosFacturaEdicion(facturaId, clienteId, pagos) {
+  const { data: pagosPrevios, error: pagosPreviosError } = await supabaseClient
+    .from('pagos_factura')
     .select(`
       id,
+      pago_codigo,
       factura_id,
-      producto_id,
-      cantidad,
-      precio_unit,
-      desc_prod,
-      subtotal,
-      imagen_producto
-    `);
+      cliente_id,
+      metodo_pago_id,
+      fecha,
+      monto,
+      nota,
+      activo
+    `)
+    .eq('factura_id', facturaId);
 
-  if (insertDetallesError) throw insertDetallesError;
+  if (pagosPreviosError) throw pagosPreviosError;
 
-  const costosInsert = [];
+  const pagosValidos = pagos.filter(item =>
+    item.fecha && item.monto > 0 && item.metodo
+  );
 
-  (detallesNuevos || []).forEach(detalleNuevo => {
-    const costoPrevio = costosPreviosMap.get(detalleNuevo.producto_id);
-
-    if (!costoPrevio) return;
-
-    const cantidad = Number(detalleNuevo.cantidad || 0);
-    const moUnit = Number(costoPrevio.mo_unitario || 0);
-    const materialesUnit = Number(costoPrevio.materiales_unitario || 0);
-    const costoUnit = redondear2(moUnit + materialesUnit);
-    const totalMo = redondear2(cantidad * moUnit);
-    const totalMateriales = redondear2(cantidad * materialesUnit);
-    const totalCosto = redondear2(cantidad * costoUnit);
-
-    costosInsert.push({
-      factura_id: facturaId,
-      detalle_factura_id: detalleNuevo.id,
-      producto_id: detalleNuevo.producto_id,
-      cantidad,
-      mo_unitario: moUnit,
-      materiales_unitario: materialesUnit,
-      costo_unitario: costoUnit,
-      total_mo: totalMo,
-      total_materiales: totalMateriales,
-      total_costo: totalCosto,
-      observacion: costoPrevio.observacion || null
-    });
+  const pagosPreviosMap = new Map();
+  (pagosPrevios || []).forEach(item => {
+    pagosPreviosMap.set(item.id, item);
   });
 
-  if (costosInsert.length) {
-    const { error: insertCostosError } = await supabaseClient
-      .from('costos_producto')
-      .insert(costosInsert);
+  const idsActuales = new Set();
 
-    if (insertCostosError) throw insertCostosError;
+  for (const item of pagosValidos) {
+    const metodoPagoId = obtenerMetodoPagoId(item.metodo);
+
+    if (!metodoPagoId) {
+      throw new Error(`No se encontró el método de pago "${item.metodo}".`);
+    }
+
+    if (item.pagoIdOriginal) {
+      idsActuales.add(item.pagoIdOriginal);
+
+      const pagoPrevio = pagosPreviosMap.get(item.pagoIdOriginal);
+
+      const { error: updatePagoError } = await supabaseClient
+        .from('pagos_factura')
+        .update({
+          cliente_id: clienteId,
+          metodo_pago_id: metodoPagoId,
+          fecha: item.fecha,
+          monto: item.monto,
+          nota: item.nota ?? pagoPrevio?.nota ?? null,
+          activo: true
+        })
+        .eq('id', item.pagoIdOriginal);
+
+      if (updatePagoError) throw updatePagoError;
+    }
+  }
+
+  const pagosNuevos = pagosValidos.filter(item => !item.pagoIdOriginal);
+  if (pagosNuevos.length) {
+    await insertarPagosFactura(facturaId, clienteId, pagosNuevos);
+  }
+
+  const idsEliminar = (pagosPrevios || [])
+    .filter(item => !idsActuales.has(item.id))
+    .map(item => item.id);
+
+  if (idsEliminar.length) {
+    const { error: deletePagosError } = await supabaseClient
+      .from('pagos_factura')
+      .delete()
+      .in('id', idsEliminar);
+
+    if (deletePagosError) throw deletePagosError;
   }
 }
 
 async function guardarCambiosFactura() {
   try {
-    mostrarLoadingOverlay('Guardando venta...');
+    mostrarLoadingOverlay('Guardando factura...');
 
     if (!facturaEdicionActual?.factura?.id) {
       throw new Error('No hay una factura cargada para editar.');
@@ -3066,12 +3226,16 @@ async function guardarCambiosFactura() {
     const clienteId = await obtenerClienteIdEdicion(data.clienteNombre);
 
     await actualizarFacturaEncabezado(facturaId, data, clienteId);
-    await reemplazarDetalleYCostosEdicion(
+    await sincronizarDetalleYCostosEdicion(
       facturaId,
       data.productos,
       data.origenCodigo
     );
-    await reemplazarPagosFacturaEdicion(facturaId, clienteId, data.pagos);
+    await sincronizarPagosFacturaEdicion(
+      facturaId,
+      clienteId,
+      data.pagos
+    );
 
     alert('Factura editada correctamente.');
     await buscarFacturas();
