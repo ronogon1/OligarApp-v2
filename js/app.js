@@ -79,12 +79,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       agregarFilaPagoEdicion();
     });
 
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('envioEdicionFactura')
-      ?.addEventListener('input', recalcularResumenEdicionFactura);
-    document.getElementById('descEdicionFactura')
-      ?.addEventListener('input', recalcularResumenEdicionFactura);
-  });
+  document.getElementById('envioEdicionFactura')
+    ?.addEventListener('input', recalcularResumenEdicionFactura);
+  document.getElementById('descEdicionFactura')
+    ?.addEventListener('input', recalcularResumenEdicionFactura);
 
   document.getElementById('btnCerrarEdicionFactura')
     ?.addEventListener('click', cerrarPanelEdicionFactura);

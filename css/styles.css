@@ -186,23 +186,6 @@ img {
   flex: 1;
 }
 
-.nav-btn {
-  border: 1px solid var(--thistle);
-  background: var(--floral-white);
-  color: var(--mauve-bark);
-  border-radius: 12px;
-  padding: 10px 16px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.nav-btn.active {
-  background: var(--deep-lilac);
-  color: var(--white);
-  border-color: var(--deep-lilac);
-}
-
 .user-info {
   display: flex;
   align-items: center;
@@ -489,9 +472,6 @@ img {
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
-  .desktop-nav {
-    display: none;
-  }
 
   .active-section-indicator {
     display: none;
@@ -1447,7 +1427,7 @@ img {
   background-color: rgba(46, 125, 50, 0.08);
 }
 
-.estado-activa {
+.estado-saldoPendiente {
   color: #2e7d32;
   font-weight: 600;
 }
