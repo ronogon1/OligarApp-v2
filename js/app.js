@@ -1267,27 +1267,6 @@ async function generarCodigoFactura() {
   return formatearCodigo(prefijo, siguiente, 4);
 }
 
-/*
-function generarCodigoPago(index) {
-  const ahora = new Date();
-  const fecha = [
-    ahora.getFullYear(),
-    String(ahora.getMonth() + 1).padStart(2, '0'),
-    String(ahora.getDate()).padStart(2, '0')
-  ].join('');
-
-  const hora = [
-    String(ahora.getHours()).padStart(2, '0'),
-    String(ahora.getMinutes()).padStart(2, '0'),
-    String(ahora.getSeconds()).padStart(2, '0')
-  ].join('');
-
-  const sufijo = String(index + 1).padStart(2, '0');
-  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `PAG-${fecha}-${hora}-${sufijo}-${random}`;
-}
-*/
-
 async function cargarCatalogosVenta() {
   if (
     ventaCatalogos.estadoSaldoPendienteId &&
@@ -2514,6 +2493,7 @@ function recalcularFilaProductoEdicion(row) {
 
 function agregarFilaPagoEdicion(data = {}, index = null) {
   const container = document.getElementById('pagosEdicionContainer');
+  const numeroPago = index || (container.querySelectorAll('.pago-row').length + 1);
 
   const row = document.createElement('div');
   row.className = 'pago-row';
@@ -2522,7 +2502,7 @@ function agregarFilaPagoEdicion(data = {}, index = null) {
 
   row.innerHTML = `
     <div class="item-card">
-      <h4 class="item-card-title">Pago</h4>
+      <h4 class="item-card-title">Pago ${numeroPago}</h4>
 
       <div class="item-grid-pagos">
         <div class="field-group-inline">
@@ -2543,15 +2523,34 @@ function agregarFilaPagoEdicion(data = {}, index = null) {
 
         <div class="field-group-inline">
           <label>Método</label>
-          <input
-            type="text"
-            class="pago-metodo"
-            placeholder="Método"
-            value="${data.metodo || ''}"
-          >
+          <select class="pago-metodo">
+            <option value="">Selecciona</option>
+            <option value="Efectivo" ${
+              data.metodo === 'Efectivo' ? 'selected' : ''
+            }>Efectivo</option>
+            <option value="Transferencia" ${
+              data.metodo === 'Transferencia' ? 'selected' : ''
+            }>Transferencia</option>
+            <option value="Otro" ${
+              data.metodo === 'Otro' ? 'selected' : ''
+            }>Otro</option>
+          </select>
         </div>
 
         <button type="button" class="btn-remove">✕</button>
+      </div>
+
+      <div class="item-grid">
+        <div class="field-group-inline">
+          <label>Nota</label>
+          <input
+            type="text"
+            class="pago-nota"
+            placeholder="Referencia, banco, comprobante u observación"
+            maxlength="200"
+            value="${escapeHtml(data.nota || '')}"
+          >
+        </div>
       </div>
     </div>
   `;
@@ -2564,8 +2563,11 @@ function agregarFilaPagoEdicion(data = {}, index = null) {
   row.querySelector('.btn-remove')
     .addEventListener('click', () => {
       row.remove();
+      renumerarPagosEdicion();
       recalcularResumenEdicionFactura();
     });
+
+  renumerarPagosEdicion();
 }
 
 function recalcularResumenEdicionFactura() {
@@ -2727,6 +2729,9 @@ function obtenerPagosEdicionFormulario() {
     const metodo = normalizarTexto(
       row.querySelector('.pago-metodo').value
     );
+    const nota = normalizarTexto(
+      row.querySelector('.pago-nota')?.value || ''
+    );
 
     return {
       index: index + 1,
@@ -2734,7 +2739,7 @@ function obtenerPagosEdicionFormulario() {
       fecha,
       monto,
       metodo,
-      nota: row.dataset.notaOriginal || null
+      nota: nota || null
     };
   });
 }
@@ -3238,8 +3243,8 @@ async function guardarCambiosFactura() {
     );
 
     alert('Factura editada correctamente.');
+    cerrarPanelEdicionFactura()
     await buscarFacturas();
-    await abrirPanelEdicionFactura(facturaId);
   } catch (error) {
     console.error('Error guardando cambios de factura:', error);
     alert(error.message || 'No fue posible guardar los cambios de la factura.');
@@ -3932,12 +3937,6 @@ function limpiarFormularioCliente() {
 
   document.getElementById('clienteFormTitulo').textContent = 'Nuevo cliente';
 
-  /*
-  const btnToggle = document.getElementById('btnToggleEstadoCliente');
-  btnToggle.classList.add('hidden');
-  btnToggle.textContent = 'Cambiar a inactivo';
-  */
-
 }
 
 function obtenerDatosFormularioCliente() {
@@ -4101,14 +4100,6 @@ async function cargarClienteEnFormulario(clienteId) {
     document.getElementById('clienteActivoForm').checked = !!data.activo;
 
     document.getElementById('clienteFormTitulo').textContent = 'Editar cliente';
-
-    /*
-    const btnToggle = document.getElementById('btnToggleEstadoCliente');
-    btnToggle.classList.remove('hidden');
-    btnToggle.textContent = data.activo
-      ? 'Cambiar a inactivo'
-      : 'Cambiar a activo';
-    */
   
   mostrarFormularioCliente();
   
@@ -4181,53 +4172,6 @@ async function guardarClienteGestion() {
   }
 }
 
-/*
-async function toggleEstadoCliente() {
-  try {
-    const clienteId = document.getElementById('clienteId').value.trim();
-
-    if (!clienteId) {
-      alert('Primero debes seleccionar un cliente.');
-      return;
-    }
-
-    const activoActual = document.getElementById('clienteActivoForm').checked;
-    const nuevoEstado = !activoActual;
-
-    const mensaje = nuevoEstado
-      ? '¿Deseas activar este cliente?'
-      : '¿Deseas inactivar este cliente?';
-
-    const ok = confirm(mensaje);
-    if (!ok) return;
-
-    const { error } = await supabaseClient
-      .from('clientes')
-      .update({
-        activo: nuevoEstado
-      })
-      .eq('id', clienteId);
-
-    if (error) {
-      throw error;
-    }
-
-    document.getElementById('clienteActivoForm').checked = nuevoEstado;
-
-    const btnToggle = document.getElementById('btnToggleEstadoCliente');
-    btnToggle.textContent = nuevoEstado
-      ? 'Cambiar a inactivo'
-      : 'Cambiar a activo';
-
-    alert(`Cliente ${nuevoEstado ? 'activado' : 'inactivado'} correctamente.`);
-    await buscarClientesGestion();
-  } catch (error) {
-    console.error('Error cambiando estado del cliente:', error);
-    alert(error.message || 'No fue posible cambiar el estado del cliente.');
-  }
-}
-*/
-
 function mostrarFormularioCliente() {
   document.getElementById('clienteFormPanel')?.classList.remove('hidden');
   document.getElementById('clienteFormPanel')
@@ -4293,12 +4237,6 @@ function actualizarPreviewProductoGestion(src) {
     }
   }
 }
-
-/*
-function validarArchivoImagenProductoGestion(file) {
-  return validarArchivoImagen(file);
-}
-*/
 
 function manejarPreviewImagenProductoGestion() {
   const input = document.getElementById('productoImagenForm');
