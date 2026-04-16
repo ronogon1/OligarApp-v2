@@ -2568,6 +2568,17 @@ function agregarFilaPagoEdicion(data = {}, index = null) {
   renumerarPagosEdicion();
 }
 
+function renumerarPagosEdicion() {
+  const rows = document.querySelectorAll('#pagosEdicionContainer .pago-row');
+
+  rows.forEach((row, index) => {
+    const title = row.querySelector('.item-card-title');
+    if (title) {
+      title.textContent = `Pago ${index + 1}`;
+    }
+  });
+}
+
 function recalcularResumenEdicionFactura() {
   const filas = document.querySelectorAll('#productosEdicionContainer .producto-row');
 
